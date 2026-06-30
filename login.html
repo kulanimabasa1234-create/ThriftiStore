@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | THRIFTI</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #eef2ff 0%, #e0f2e9 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      max-width: 460px;
+      width: 100%;
+      background: white;
+      border-radius: 32px;
+      box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+    }
+    .brand-header {
+      background: #1e6b4c;
+      padding: 24px 28px;
+      text-align: center;
+    }
+    .brand-header h1 {
+      color: white;
+      font-size: 2rem;
+      letter-spacing: -0.5px;
+    }
+    .brand-header p {
+      color: #d1fae5;
+      font-size: 0.85rem;
+      margin-top: 6px;
+    }
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #e2e8f0;
+      background: #f9fafb;
+    }
+    .tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      padding: 16px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      color: #4b5563;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      color: #1e6b4c;
+      border-bottom: 3px solid #e67e22;
+      background: white;
+    }
+    .form-container {
+      padding: 32px 28px 36px;
+    }
+    .form {
+      display: none;
+    }
+    .form.active {
+      display: block;
+    }
+    .input-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #0f172a;
+      font-size: 0.85rem;
+    }
+    input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 40px;
+      font-size: 0.95rem;
+      transition: 0.2s;
+      background: #fff;
+    }
+    input:focus {
+      outline: none;
+      border-color: #e67e22;
+      box-shadow: 0 0 0 3px rgba(230,126,34,0.1);
+    }
+    .submit-btn {
+      width: 100%;
+      background: #e67e22;
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 40px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: 0.2s;
+      margin-top: 8px;
+    }
+    .submit-btn:hover {
+      background: #d35400;
+    }
+    .info-note {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #6c757d;
+      margin-top: 24px;
+      border-top: 1px solid #edf2f7;
+      padding-top: 20px;
+    }
+    .back-link {
+      display: inline-block;
+      margin-top: 16px;
+      text-align: center;
+      width: 100%;
+      color: #1e6b4c;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="brand-header">
+    <h1>THRIFTI</h1>
+    <p>local · trusted · circular</p>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" id="loginTabBtn">Log in</button>
+    <button class="tab-btn" id="signupTabBtn">Add new account</button>
+  </div>
+  <div class="form-container">
+    <div id="loginForm" class="form active">
+      <div class="input-group">
+        <label>Email address</label>
+        <input type="email" id="loginEmail" placeholder="thandi@example.com" autocomplete="email">
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="••••••••">
+      </div>
+      <button class="submit-btn" id="doLoginBtn">Log in to THRIFTI</button>
+      <div class="info-note">
+        🔐 Demo mode — no real data stored.<br>
+        Use any email to try. Verified local sellers get a badge.
+      </div>
+    </div>
+    <div id="signupForm" class="form">
+      <div class="input-group">
+        <label>Full name</label>
+        <input type="text" id="signupName" placeholder="e.g., Lerato Nkosi">
+      </div>
+      <div class="input-group">
+        <label>Email address</label>
+        <input type="email" id="signupEmail" placeholder="lerato@example.com">
+      </div>
+      <div class="input-group">
+        <label>Create password</label>
+        <input type="password" id="signupPassword" placeholder="minimum 6 characters">
+      </div>
+      <div class="input-group">
+        <label>Confirm password</label>
+        <input type="password" id="signupConfirm" placeholder="repeat password">
+      </div>
+      <button class="submit-btn" id="doSignupBtn">Create new account</button>
+      <div class="info-note">
+        ✅ By creating an account, you help build a trusted local C2C economy.<br>
+        Your info stays in South Africa.
+      </div>
+    </div>
+    <a href="index.html" class="back-link">← Back to marketplace</a>
+  </div>
+</div>
+<script>
+  const loginTab = document.getElementById('loginTabBtn');
+  const signupTab = document.getElementById('signupTabBtn');
+  const loginFormDiv = document.getElementById('loginForm');
+  const signupFormDiv = document.getElementById('signupForm');
+
+  function setActiveTab(tab) {
+    if (tab === 'login') {
+      loginTab.classList.add('active');
+      signupTab.classList.remove('active');
+      loginFormDiv.classList.add('active');
+      signupFormDiv.classList.remove('active');
+    } else {
+      signupTab.classList.add('active');
+      loginTab.classList.remove('active');
+      signupFormDiv.classList.add('active');
+      loginFormDiv.classList.remove('active');
+    }
+  }
+  loginTab.addEventListener('click', () => setActiveTab('login'));
+  signupTab.addEventListener('click', () => setActiveTab('signup'));
+
+  // Helper: get users array
+  function getUsers() {
+    const users = localStorage.getItem('thrifti_users');
+    return users ? JSON.parse(users) : [];
+  }
+  function saveUsers(users) {
+    localStorage.setItem('thrifti_users', JSON.stringify(users));
+  }
+
+  // Login
+  document.getElementById('doLoginBtn').addEventListener('click', () => {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    if (!email || !password) {
+      alert("Please enter both email and password.");
+      return;
+    }
+    const users = getUsers();
+    const user = users.find(u => u.email === email && u.password === password);
+    if (user) {
+      localStorage.setItem('thrifti_logged_in', JSON.stringify({ email: user.email, name: user.name }));
+      alert(`Welcome back, ${user.name}! ✅`);
+      window.location.href = "index.html";
+    } else {
+      alert("❌ Invalid email or password. Please try again or create a new account.");
+    }
+  });
+
+  // Signup
+  document.getElementById('doSignupBtn').addEventListener('click', () => {
+    const name = document.getElementById('signupName').value.trim();
+    const email = document.getElementById('signupEmail').value.trim();
+    const password = document.getElementById('signupPassword').value;
+    const confirm = document.getElementById('signupConfirm').value;
+    if (!name || !email || !password || !confirm) {
+      alert("Please fill in all fields.");
+      return;
+    }
+    if (password.length < 6) {
+      alert("Password must be at least 6 characters.");
+      return;
+    }
+    if (password !== confirm) {
+      alert("Passwords do not match.");
+      return;
+    }
+    const users = getUsers();
+    if (users.find(u => u.email === email)) {
+      alert("⚠️ An account with this email already exists. Please log in.");
+      setActiveTab('login');
+      document.getElementById('loginEmail').value = email;
+      return;
+    }
+    const newUser = { name, email, password };
+    users.push(newUser);
+    saveUsers(users);
+    alert(`🎉 Account created successfully for ${name}! You can now log in.`);
+    setActiveTab('login');
+    document.getElementById('loginEmail').value = email;
+    document.getElementById('loginPassword').value = '';
+  });
+
+  // Enter key submission
+  document.querySelectorAll('input').forEach(input => {
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        if (loginFormDiv.classList.contains('active')) document.getElementById('doLoginBtn').click();
+        else document.getElementById('doSignupBtn').click();
+      }
+    });
+  });
+</script>
+</body>
+</html>

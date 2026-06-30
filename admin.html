@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin | THRIFTI</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Roboto, sans-serif; background: #f1f5f9; padding: 30px 20px; }
+    .container { max-width: 1400px; margin: 0 auto; }
+    h1 { font-size: 2rem; margin-bottom: 20px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 16px; margin-bottom: 30px; }
+    .stat-card { background: white; border-radius: 24px; padding: 20px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+    .stat-number { font-size: 2rem; font-weight: bold; color: #1e6b4c; }
+    .card { background: white; border-radius: 24px; padding: 24px; margin-bottom: 30px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+    .card h2 { border-left: 5px solid #e67e22; padding-left: 16px; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+    th { background: #f8fafc; }
+    button { background: #e67e22; color: white; border: none; padding: 6px 16px; border-radius: 40px; cursor: pointer; margin: 2px; }
+    .danger-btn { background: #dc2626; }
+    .view-more-btn { background: #1e6b4c; margin-top: 16px; display: inline-block; }
+    .flex-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 40px; font-size: 0.7rem; }
+    .badge-pending { background: #fed7aa; }
+    .badge-shipped { background: #d1fae5; }
+    .badge-completed { background: #c7d2fe; }
+    .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
+    .modal-content { background: white; max-width: 600px; width:90%; border-radius: 32px; padding: 24px; max-height: 80vh; overflow-y: auto; }
+    input, select, textarea { width: 100%; padding: 8px; margin: 8px 0 16px; border: 1px solid #cbd5e1; border-radius: 40px; }
+    hr { margin: 16px 0; }
+    .inline-setting { margin-bottom: 15px; }
+    .inline-setting label { display: inline-block; width: 180px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🛍️ THRIFTI Admin Dashboard</h1>
+
+  <!-- Stats cards -->
+  <div class="stats-grid" id="statsGrid"></div>
+
+  <!-- Registered Users -->
+  <div class="card"><h2>👥 Registered Users</h2>
+    <table id="usersTable"><thead><tr><th>Name</th><th>Email</th><th>Actions</th></tr></thead><tbody id="usersBody"></tbody></table>
+    <button id="viewMoreUsersBtn" class="view-more-btn">View more users</button>
+  </div>
+
+  <!-- Active Listings -->
+  <div class="card"><h2>📦 Active Listings</h2>
+    <table id="listingsTable"><thead><tr><th>Name</th><th>Seller</th><th>Price</th><th>Location</th><th>Actions</th></tr></thead><tbody id="listingsBody"></tbody></table>
+    <button id="viewMoreListingsBtn" class="view-more-btn">View more listings</button>
+  </div>
+
+  <!-- Categories -->
+  <div class="card"><h2>🏷️ Product Categories</h2>
+    <table id="categoriesTable"><thead><tr><th>Category Name</th><th>Actions</th></tr></thead><tbody id="categoriesBody"></tbody></table>
+    <button id="viewMoreCategoriesBtn" class="view-more-btn">View more categories</button>
+    <button id="addCategoryBtn">+ Add Category</button>
+  </div>
+
+  <!-- Orders -->
+  <div class="card"><h2>✅ Orders</h2>
+    <table id="ordersTable"><thead><tr><th>Date</th><th>Buyer</th><th>Items</th><th>Total</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ordersBody"></tbody></table>
+    <button id="viewMoreOrdersBtn" class="view-more-btn">View more orders</button>
+  </div>
+
+  <!-- Reported Items -->
+  <div class="card"><h2>⚠️ Reported Items</h2>
+    <table id="reportedItemsTable"><thead><tr><th>Item ID</th><th>Item Name</th><th>Reported By</th><th>Reason</th><th>Date</th><th>Actions</th></tr></thead><tbody id="reportedItemsBody"></tbody></table>
+    <button id="viewMoreReportedItemsBtn" class="view-more-btn">View more reports</button>
+  </div>
+
+  <!-- Reported Users -->
+  <div class="card"><h2>⚠️ Reported Users</h2>
+    <table id="reportedUsersTable"><thead><tr><th>User Email</th><th>Reported By</th><th>Reason</th><th>Date</th><th>Actions</th></tr></thead><tbody id="reportedUsersBody"></tbody></table>
+    <button id="viewMoreReportedUsersBtn" class="view-more-btn">View more reports</button>
+  </div>
+
+  <!-- Chat Oversight -->
+  <div class="card"><h2>💬 Chat Conversations</h2>
+    <table id="chatsTable"><thead><tr><th>Participants</th><th>Last Message</th><th>Actions</th></tr></thead><tbody id="chatsBody"></tbody></table>
+    <button id="viewMoreChatsBtn" class="view-more-btn">View more conversations</button>
+  </div>
+
+  <!-- Site Settings (simple, always visible) -->
+  <div class="card"><h2>⚙️ Site Settings</h2>
+    <div id="settingsPanel"></div>
+  </div>
+
+  <!-- Backup & Restore -->
+  <div class="card"><h2>💾 Backup & Export</h2>
+    <button id="backupBtn">Download Backup (JSON)</button>
+    <input type="file" id="restoreFile" accept=".json">
+    <button id="restoreBtn">Restore from Backup</button>
+  </div>
+
+  <!-- Admin Log -->
+  <div class="card"><h2>📜 Admin Activity Log</h2>
+    <div id="adminLog"></div>
+    <button id="clearLogBtn">Clear Log</button>
+  </div>
+</div>
+
+<!-- Chat modal -->
+<div id="chatModal" class="modal">
+  <div class="modal-content">
+    <span id="closeChatModal" style="float:right; cursor:pointer; font-size:1.5rem;">&times;</span>
+    <h3>💬 Conversation</h3>
+    <div id="chatMessages"></div>
+  </div>
+</div>
+
+<script>
+  // ---------- Helper functions ----------
+  const STORAGE_KEYS = {
+    users: 'thrifti_users',
+    listings: 'thrifti_listings',
+    orders: 'thrifti_orders',
+    categories: 'thrifti_categories',
+    reportedItems: 'thrifti_reported_items',
+    reportedUsers: 'thrifti_reported_users',
+    settings: 'thrifti_settings',
+    adminLog: 'thrifti_admin_log'
+  };
+
+  function getUsers() { return JSON.parse(localStorage.getItem(STORAGE_KEYS.users) || '[]'); }
+  function getListings() { return JSON.parse(localStorage.getItem(STORAGE_KEYS.listings) || '[]'); }
+  function getOrders() { return JSON.parse(localStorage.getItem(STORAGE_KEYS.orders) || '[]'); }
+  function getCategories() {
+    let cats = localStorage.getItem(STORAGE_KEYS.categories);
+    if (!cats) { cats = ['clothes', 'electronics', 'shoes', 'furniture']; localStorage.setItem(STORAGE_KEYS.categories, JSON.stringify(cats)); }
+    return JSON.parse(cats);
+  }
+  function getReportedItems() { return JSON.parse(localStorage.getItem(STORAGE_KEYS.reportedItems) || '[]'); }
+  function getReportedUsers() { return JSON.parse(localStorage.getItem(STORAGE_KEYS.reportedUsers) || '[]'); }
+  function getSettings() {
+    const def = { allowRegistration: true, currency: 'ZAR', adminEmail: 'admin@thrifti.com' };
+    const stored = localStorage.getItem(STORAGE_KEYS.settings);
+    return stored ? JSON.parse(stored) : def;
+  }
+  function getAdminLog() { return JSON.parse(localStorage.getItem(STORAGE_KEYS.adminLog) || '[]'); }
+
+  function saveUsers(u) { localStorage.setItem(STORAGE_KEYS.users, JSON.stringify(u)); }
+  function saveListings(l) { localStorage.setItem(STORAGE_KEYS.listings, JSON.stringify(l)); }
+  function saveOrders(o) { localStorage.setItem(STORAGE_KEYS.orders, JSON.stringify(o)); }
+  function saveCategories(c) { localStorage.setItem(STORAGE_KEYS.categories, JSON.stringify(c)); }
+  function saveReportedItems(i) { localStorage.setItem(STORAGE_KEYS.reportedItems, JSON.stringify(i)); }
+  function saveReportedUsers(u) { localStorage.setItem(STORAGE_KEYS.reportedUsers, JSON.stringify(u)); }
+  function saveSettings(s) { localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(s)); }
+  function saveAdminLog(l) { localStorage.setItem(STORAGE_KEYS.adminLog, JSON.stringify(l)); }
+
+  function addAdminLog(action, details) {
+    const log = getAdminLog();
+    log.push({ timestamp: Date.now(), action, details, admin: 'admin@thrifti.com' });
+    saveAdminLog(log);
+    renderAdminLog();
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+  }
+
+  // ---------- Stats ----------
+  function renderStats() {
+    const users = getUsers().length;
+    const listings = getListings().length;
+    const orders = getOrders();
+    const sold = orders.reduce((s,o) => s + o.items.length, 0);
+    const revenue = orders.reduce((s,o) => s + o.total, 0);
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="stat-number">${users}</div><div>Users</div></div>
+      <div class="stat-card"><div class="stat-number">${listings}</div><div>Active Listings</div></div>
+      <div class="stat-card"><div class="stat-number">${sold}</div><div>Sold Items</div></div>
+      <div class="stat-card"><div class="stat-number">R ${revenue.toLocaleString()}</div><div>Revenue</div></div>
+    `;
+  }
+
+  // ---------- Users ----------
+  let showAllUsers = false;
+  function renderUsers() {
+    const users = getUsers();
+    const tbody = document.getElementById('usersBody');
+    const btn = document.getElementById('viewMoreUsersBtn');
+    if (!users.length) { tbody.innerHTML = '<tr><td colspan="3">No users.</td></tr>'; btn.style.display = 'none'; return; }
+    const limit = showAllUsers ? users.length : 5;
+    let html = '';
+    for (let i = 0; i < limit; i++) {
+      html += `<tr>
+        <td>${escapeHtml(users[i].name)}</td>
+        <td>${escapeHtml(users[i].email)}</td>
+        <td><button class="delete-user" data-email="${escapeHtml(users[i].email)}">Delete</button></td>
+      </tr>`;
+    }
+    tbody.innerHTML = html;
+    btn.style.display = users.length > 5 ? 'inline-block' : 'none';
+    btn.innerText = showAllUsers ? 'Show less' : 'View more users';
+    document.querySelectorAll('.delete-user').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const email = btn.dataset.email;
+        if (confirm(`Delete ${email} and all their data?`)) {
+          let users = getUsers();
+          let listings = getListings();
+          let orders = getOrders();
+          users = users.filter(u => u.email !== email);
+          listings = listings.filter(l => l.sellerEmail !== email);
+          orders = orders.filter(o => o.buyerEmail !== email);
+          saveUsers(users); saveListings(listings); saveOrders(orders);
+          addAdminLog('Delete user', email);
+          renderUsers(); renderListings(); renderOrders(); renderStats();
+        }
+      });
+    });
+  }
+  document.getElementById('viewMoreUsersBtn').addEventListener('click', () => { showAllUsers = !showAllUsers; renderUsers(); });
+
+  // ---------- Listings ----------
+  let showAllListings = false;
+  function renderListings() {
+    const listings = getListings();
+    const tbody = document.getElementById('listingsBody');
+    const btn = document.getElementById('viewMoreListingsBtn');
+    if (!listings.length) { tbody.innerHTML = '<tr><td colspan="5">No active listings.</td></tr>'; btn.style.display = 'none'; return; }
+    const limit = showAllListings ? listings.length : 1;
+    let html = '';
+    for (let i = 0; i < limit; i++) {
+      const l = listings[i];
+      html += `<tr>
+        <td>${escapeHtml(l.name)}</td>
+        <td>${escapeHtml(l.sellerName || l.sellerEmail)}</td>
+        <td>R ${l.price.toLocaleString()}</td>
+        <td>${escapeHtml(l.location)}</td>
+        <td><button class="delete-listing" data-id="${l.id}">Delete</button></td>
+      </tr>`;
+    }
+    tbody.innerHTML = html;
+    btn.style.display = listings.length > 1 ? 'inline-block' : 'none';
+    btn.innerText = showAllListings ? 'Show less' : 'View more listings';
+    document.querySelectorAll('.delete-listing').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.dataset.id);
+        if (confirm('Delete this listing?')) {
+          let listings = getListings();
+          listings = listings.filter(l => l.id !== id);
+          saveListings(listings);
+          addAdminLog('Delete listing', `ID ${id}`);
+          renderListings(); renderStats();
+        }
+      });
+    });
+  }
+  document.getElementById('viewMoreListingsBtn').addEventListener('click', () => { showAllListings = !showAllListings; renderListings(); });
+
+  // ---------- Categories ----------
+  let showAllCategories = false;
+  function renderCategories() {
+    let cats = getCategories();
+    const tbody = document.getElementById('categoriesBody');
+    const btn = document.getElementById('viewMoreCategoriesBtn');
+    if (!cats.length) { tbody.innerHTML = '<tr><td colspan="2">No categories.</td></tr>'; btn.style.display = 'none'; return; }
+    const limit = showAllCategories ? cats.length : 3;
+    let html = '';
+    for (let i = 0; i < limit; i++) {
+      html += `<tr>
+        <td>${escapeHtml(cats[i])}</td>
+        <td><button class="edit-cat" data-cat="${escapeHtml(cats[i])}">Edit</button> <button class="delete-cat" data-cat="${escapeHtml(cats[i])}">Delete</button></td>
+      </tr>`;
+    }
+    tbody.innerHTML = html;
+    btn.style.display = cats.length > 3 ? 'inline-block' : 'none';
+    btn.innerText = showAllCategories ? 'Show less' : 'View more categories';
+    attachCategoryEvents();
+  }
+  function attachCategoryEvents() {
+    document.querySelectorAll('.edit-cat').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const old = btn.dataset.cat;
+        const newName = prompt('New name:', old);
+        if (newName && newName !== old) {
+          let cats = getCategories();
+          const idx = cats.indexOf(old);
+          if (idx !== -1) cats[idx] = newName;
+          saveCategories(cats);
+          addAdminLog('Edit category', `${old} → ${newName}`);
+          renderCategories();
+        }
+      });
+    });
+    document.querySelectorAll('.delete-cat').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cat = btn.dataset.cat;
+        if (confirm(`Delete category "${cat}"?`)) {
+          let cats = getCategories();
+          cats = cats.filter(c => c !== cat);
+          saveCategories(cats);
+          addAdminLog('Delete category', cat);
+          renderCategories();
+        }
+      });
+    });
+  }
+  document.getElementById('viewMoreCategoriesBtn').addEventListener('click', () => { showAllCategories = !showAllCategories; renderCategories(); });
+  document.getElementById('addCategoryBtn').addEventListener('click', () => {
+    const newCat = prompt('Enter new category name:');
+    if (newCat) {
+      let cats = getCategories();
+      if (!cats.includes(newCat)) { cats.push(newCat); saveCategories(cats); addAdminLog('Add category', newCat); renderCategories(); }
+      else alert('Already exists');
+    }
+  });
+
+  // ---------- Orders ----------
+  let showAllOrders = false;
+  function renderOrders() {
+    let orders = getOrders();
+    orders.sort((a,b) => b.date - a.date);
+    const tbody = document.getElementById('ordersBody');
+    const btn = document.getElementById('viewMoreOrdersBtn');
+    if (!orders.length) { tbody.innerHTML = '<tr><td colspan="6">No orders.</td></tr>'; btn.style.display = 'none'; return; }
+    const limit = showAllOrders ? orders.length : 1;
+    let html = '';
+    for (let i = 0; i < limit; i++) {
+      const o = orders[i];
+      const statusClass = o.status === 'shipped' ? 'badge-shipped' : (o.status === 'completed' ? 'badge-completed' : 'badge-pending');
+      const itemsHtml = o.items.map(it => `${it.name} (x${it.quantity})`).join('<br>');
+      html += `<tr>
+        <td>${new Date(o.date).toLocaleString()}</td>
+        <td>${escapeHtml(o.buyerName)}<br><small>${escapeHtml(o.buyerEmail)}</small></td>
+        <td>${itemsHtml}</td>
+        <td>R ${o.total.toLocaleString()}</td>
+        <td><span class="badge ${statusClass}">${o.status || 'pending'}</span></td>
+        <td>
+          <button class="mark-shipped" data-id="${o.id}">Shipped</button>
+          <button class="mark-completed" data-id="${o.id}">Complete</button>
+          <button class="refund-order" data-id="${o.id}">Refund</button>
+          <button class="delete-order" data-id="${o.id}">Delete</button>
+        </td>
+      </tr>`;
+    }
+    tbody.innerHTML = html;
+    btn.style.display = orders.length > 1 ? 'inline-block' : 'none';
+    btn.innerText = showAllOrders ? 'Show less' : 'View more orders';
+    attachOrderEvents();
+  }
+  function attachOrderEvents() {
+    document.querySelectorAll('.mark-shipped').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.dataset.id);
+        let orders = getOrders();
+        const order = orders.find(o => o.id === id);
+        if (order) { order.status = 'shipped'; saveOrders(orders); addAdminLog('Mark shipped', `Order ${id}`); renderOrders(); renderStats(); }
+      });
+    });
+    document.querySelectorAll('.mark-completed').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.dataset.id);
+        let orders = getOrders();
+        const order = orders.find(o => o.id === id);
+        if (order) { order.status = 'completed'; saveOrders(orders); addAdminLog('Mark completed', `Order ${id}`); renderOrders(); renderStats(); }
+      });
+    });
+    document.querySelectorAll('.refund-order').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (confirm('Refund this order?')) addAdminLog('Refund order', `Order ${btn.dataset.id}`);
+      });
+    });
+    document.querySelectorAll('.delete-order').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.dataset.id);
+        if (confirm('Delete order?')) {
+          let orders = getOrders();
+          orders = orders.filter(o => o.id !== id);
+          saveOrders(orders);
+          addAdminLog('Delete order', `Order ${id}`);
+          renderOrders(); renderStats();
+        }
+      });
+    });
+  }
+  document.getElementById('viewMoreOrdersBtn').addEventListener('click', () => { showAllOrders = !showAllOrders; renderOrders(); });
+
+  // ---------- Reported Items ----------
+  let showAllRepItems = false;
+  function renderReportedItems() {
+    let items = getReportedItems();
+    const tbody = document.getElementById('reportedItemsBody');
+    const btn = document.getElementById('viewMoreReportedItemsBtn');
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="6">No reports.</td></tr>'; btn.style.display = 'none'; return; }
+    const limit = showAllRepItems ? items.length : 1;
+    let html = '';
+    for (let i = 0; i < limit; i++) {
+      const r = items[i];
+      html += `<tr>
+        <td>${r.itemId}</td>
+        <td>${escapeHtml(r.itemName)}</td>
+        <td>${escapeHtml(r.reportedBy)}</td>
+        <td>${escapeHtml(r.reason)}</td>
+        <td>${new Date(r.date).toLocaleString()}</td>
+        <td><button class="resolve-item" data-id="${r.itemId}">Resolve</button> <button class="delete-item-report" data-id="${r.itemId}">Delete</button></td>
+      </tr>`;
+    }
+    tbody.innerHTML = html;
+    btn.style.display = items.length > 1 ? 'inline-block' : 'none';
+    btn.innerText = showAllRepItems ? 'Show less' : 'View more reports';
+    attachRepItemEvents();
+  }
+  function attachRepItemEvents() {
+    document.querySelectorAll('.resolve-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.dataset.id);
+        let reports = getReportedItems();
+        reports = reports.filter(r => r.itemId !== id);
+        saveReportedItems(reports);
+        addAdminLog('Resolve reported item', `Item ${id}`);
+        renderReportedItems();
+      });
+    });
+    document.querySelectorAll('.delete-item-report').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.dataset.id);
+        let reports = getReportedItems();
+        reports = reports.filter(r => r.itemId !== id);
+        saveReportedItems(reports);
+        addAdminLog('Delete item report', `Item ${id}`);
+        renderReportedItems();
+      });
+    });
+  }
+  document.getElementById('viewMoreReportedItemsBtn').addEventListener('click', () => { showAllRepItems = !showAllRepItems; renderReportedItems(); });
+
+  // ---------- Reported Users ----------
+  let showAllRepUsers = false;
+  function renderReportedUsers() {
+    let users = getReportedUsers();
+    const tbody = document.getElementById('reportedUsersBody');
+    const btn = document.getElementById('viewMoreReportedUsersBtn');
+    if (!users.length) { tbody.innerHTML = '<tr><td colspan="5">No reports.</td></tr>'; btn.style.display = 'none'; return; }
+    const limit = showAllRepUsers ? users.length : 1;
+    let html = '';
+    for (let i = 0; i < limit; i++) {
+      const r = users[i];
+      html += `<tr>
+        <td>${escapeHtml(r.userEmail)}</td>
+        <td>${escapeHtml(r.reportedBy)}</td>
+        <td>${escapeHtml(r.reason)}</td>
+        <td>${new Date(r.date).toLocaleString()}</td>
+        <td><button class="resolve-user" data-email="${escapeHtml(r.userEmail)}">Resolve</button> <button class="delete-user-report" data-email="${escapeHtml(r.userEmail)}">Delete</button></td>
+      </tr>`;
+    }
+    tbody.innerHTML = html;
+    btn.style.display = users.length > 1 ? 'inline-block' : 'none';
+    btn.innerText = showAllRepUsers ? 'Show less' : 'View more reports';
+    attachRepUserEvents();
+  }
+  function attachRepUserEvents() {
+    document.querySelectorAll('.resolve-user').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const email = btn.dataset.email;
+        let reports = getReportedUsers();
+        reports = reports.filter(r => r.userEmail !== email);
+        saveReportedUsers(reports);
+        addAdminLog('Resolve reported user', email);
+        renderReportedUsers();
+      });
+    });
+    document.querySelectorAll('.delete-user-report').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const email = btn.dataset.email;
+        let reports = getReportedUsers();
+        reports = reports.filter(r => r.userEmail !== email);
+        saveReportedUsers(reports);
+        addAdminLog('Delete user report', email);
+        renderReportedUsers();
+      });
+    });
+  }
+  document.getElementById('viewMoreReportedUsersBtn').addEventListener('click', () => { showAllRepUsers = !showAllRepUsers; renderReportedUsers(); });
+
+  // ---------- Chat Oversight ----------
+  let showAllChats = false;
+  function renderChats() {
+    const allKeys = Object.keys(localStorage).filter(k => k.startsWith('thrifti_chat_'));
+    let chats = [];
+    allKeys.forEach(key => {
+      const msgs = JSON.parse(localStorage.getItem(key) || '[]');
+      if (msgs.length) {
+        const parts = key.replace('thrifti_chat_', '').split('_');
+        chats.push({ key, participants: parts, lastMsg: msgs[msgs.length-1], messages: msgs });
+      }
+    });
+    chats.sort((a,b) => (b.lastMsg?.timestamp||0) - (a.lastMsg?.timestamp||0));
+    const tbody = document.getElementById('chatsBody');
+    const btn = document.getElementById('viewMoreChatsBtn');
+    if (!chats.length) { tbody.innerHTML = '<tr><td colspan="3">No conversations.</td></tr>'; btn.style.display = 'none'; return; }
+    const limit = showAllChats ? chats.length : 1;
+    let html = '';
+    for (let i = 0; i < limit; i++) {
+      const c = chats[i];
+      html += `<tr>
+        <td>${escapeHtml(c.participants.join(' ↔ '))}</td>
+        <td>${escapeHtml(c.lastMsg?.text || '')}<br><small>${new Date(c.lastMsg?.timestamp).toLocaleString()}</small></td>
+        <td><button class="view-chat" data-key="${c.key}">View</button> <button class="delete-chat" data-key="${c.key}">Delete</button></td>
+      </tr>`;
+    }
+    tbody.innerHTML = html;
+    btn.style.display = chats.length > 1 ? 'inline-block' : 'none';
+    btn.innerText = showAllChats ? 'Show less' : 'View more conversations';
+    attachChatEvents(chats);
+  }
+  function attachChatEvents(chats) {
+    document.querySelectorAll('.view-chat').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.key;
+        const chat = chats.find(c => c.key === key);
+        if (chat) {
+          let msgHtml = '<ul style="list-style:none;">';
+          chat.messages.forEach(m => {
+            msgHtml += `<li><strong>${escapeHtml(m.senderName || m.sender)}</strong>: ${escapeHtml(m.text)}<br><small>${new Date(m.timestamp).toLocaleString()}</small></li><hr>`;
+          });
+          msgHtml += '</ul>';
+          document.getElementById('chatMessages').innerHTML = msgHtml;
+          document.getElementById('chatModal').style.display = 'flex';
+        }
+      });
+    });
+    document.querySelectorAll('.delete-chat').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.key;
+        if (confirm('Delete this conversation?')) {
+          localStorage.removeItem(key);
+          addAdminLog('Delete chat', key);
+          renderChats();
+        }
+      });
+    });
+  }
+  document.getElementById('viewMoreChatsBtn').addEventListener('click', () => { showAllChats = !showAllChats; renderChats(); });
+  document.getElementById('closeChatModal').addEventListener('click', () => { document.getElementById('chatModal').style.display = 'none'; });
+  window.addEventListener('click', (e) => { if (e.target === document.getElementById('chatModal')) document.getElementById('chatModal').style.display = 'none'; });
+
+  // ---------- Site Settings (direct, hardcoded HTML to ensure it shows) ----------
+  function renderSettings() {
+    const settings = getSettings();
+    const panel = document.getElementById('settingsPanel');
+    // Clear and insert fresh HTML
+    panel.innerHTML = `
+      <div class="inline-setting">
+        <label>Allow new registrations:</label>
+        <input type="checkbox" id="allowReg" ${settings.allowRegistration ? 'checked' : ''} style="width: auto;">
+      </div>
+      <div class="inline-setting">
+        <label>Currency symbol:</label>
+        <input type="text" id="currency" value="${settings.currency}" style="width: 100px;">
+      </div>
+      <div class="inline-setting">
+        <label>Admin contact email:</label>
+        <input type="email" id="adminEmail" value="${settings.adminEmail}" style="width: 250px;">
+      </div>
+      <div class="flex-btns">
+        <button id="saveSettingsBtn">Save Settings</button>
+        <button id="resetSiteBtn" class="danger-btn">Reset Entire Site</button>
+      </div>
+    `;
+    document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+      const newSettings = {
+        allowRegistration: document.getElementById('allowReg').checked,
+        currency: document.getElementById('currency').value,
+        adminEmail: document.getElementById('adminEmail').value
+      };
+      saveSettings(newSettings);
+      addAdminLog('Update settings', JSON.stringify(newSettings));
+      alert('Settings saved.');
+    });
+    document.getElementById('resetSiteBtn').addEventListener('click', () => {
+      if (confirm('⚠️ Delete ALL data? This cannot be undone.')) {
+        localStorage.clear();
+        addAdminLog('Reset site', 'All data cleared');
+        location.reload();
+      }
+    });
+  }
+
+  // ---------- Admin Log ----------
+  function renderAdminLog() {
+    const log = getAdminLog();
+    const container = document.getElementById('adminLog');
+    if (!log.length) { container.innerHTML = '<p>No admin actions logged.</p>'; return; }
+    let html = '<ul style="max-height:200px; overflow-y:auto;">';
+    log.slice().reverse().forEach(entry => {
+      html += `<li>${new Date(entry.timestamp).toLocaleString()} - ${escapeHtml(entry.action)}: ${escapeHtml(entry.details)}</li>`;
+    });
+    html += '</ul>';
+    container.innerHTML = html;
+  }
+  function clearAdminLog() {
+    if (confirm('Clear admin log?')) { saveAdminLog([]); renderAdminLog(); }
+  }
+  document.getElementById('clearLogBtn').addEventListener('click', clearAdminLog);
+
+  // ---------- Backup & Restore ----------
+  function backupData() {
+    const data = {};
+    for (let key in STORAGE_KEYS) {
+      const val = localStorage.getItem(STORAGE_KEYS[key]);
+      if (val) data[STORAGE_KEYS[key]] = JSON.parse(val);
+    }
+    const chatKeys = Object.keys(localStorage).filter(k => k.startsWith('thrifti_chat_'));
+    data['chats'] = {};
+    chatKeys.forEach(k => { data['chats'][k] = JSON.parse(localStorage.getItem(k)); });
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `thrifti_backup_${new Date().toISOString()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    addAdminLog('Backup', 'Downloaded backup');
+  }
+  function restoreData(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        for (let key in data) {
+          if (key === 'chats') {
+            for (let chatKey in data.chats) localStorage.setItem(chatKey, JSON.stringify(data.chats[chatKey]));
+          } else {
+            localStorage.setItem(key, JSON.stringify(data[key]));
+          }
+        }
+        addAdminLog('Restore', 'From backup');
+        alert('Restore successful. Reloading...');
+        location.reload();
+      } catch (err) { alert('Invalid backup file'); }
+    };
+    reader.readAsText(file);
+  }
+  document.getElementById('backupBtn').addEventListener('click', backupData);
+  document.getElementById('restoreBtn').addEventListener('click', () => {
+    const fileInput = document.getElementById('restoreFile');
+    if (fileInput.files.length) restoreData(fileInput.files[0]);
+    else alert('Select a backup file');
+  });
+
+  // ---------- Initialise ----------
+  function init() {
+    renderStats();
+    renderUsers();
+    renderListings();
+    renderCategories();
+    renderOrders();
+    renderReportedItems();
+    renderReportedUsers();
+    renderChats();
+    renderSettings();   // this definitely works now
+    renderAdminLog();
+  }
+  init();
+</script>
+</body>
+</html>
