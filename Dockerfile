@@ -1,14 +1,13 @@
-# Use the official PHP image with Apache
 FROM php:8.2-apache
 
-# Install mysqli extension for MySQL
-RUN docker-php-ext-install mysqli && docker-php-ext-enable mysqli
+# Install PostgreSQL PDO extension
+RUN apt-get update && apt-get install -y libpq-dev && docker-php-ext-install pdo_pgsql
 
-# Copy your PHP files into the container
-COPY . /var/www/html/
-
-# Enable Apache's mod_rewrite (optional, for cleaner URLs)
+# Enable Apache mod_rewrite (optional)
 RUN a2enmod rewrite
 
-# Expose port 80
+# Copy all files to the web root
+COPY . /var/www/html/
+
+# Set the document root to /var/www/html (default)
 EXPOSE 80
