@@ -5,42 +5,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Listings | THRIFTI</title>
   <style>
-    /* Same navbar styles – we'll reuse from cart.html */
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family:'Segoe UI', Roboto, sans-serif; background:#f8fafc; padding-top:80px; padding-bottom:40px; }
-    .navbar { position:fixed; top:0; left:0; right:0; z-index:1000; background:white; border-bottom:1px solid #e2e8f0; padding:8px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; box-shadow:0 2px 8px rgba(0,0,0,0.03); }
-    .logo { font-size:1.6rem; font-weight:700; background:linear-gradient(135deg,#0f3b2c,#1e6b4c); background-clip:text; -webkit-background-clip:text; color:transparent; cursor:pointer; text-decoration:none; white-space:nowrap; }
-    .logo small { font-size:0.7rem; background:#e6f7ef; color:#1e6b4c; padding:2px 8px; border-radius:40px; margin-left:6px; }
-    .nav-categories { display:flex; gap:8px; flex-wrap:wrap; }
-    .nav-categories button { background:#f1f5f9; border:none; padding:6px 14px; border-radius:40px; font-weight:600; font-size:0.8rem; cursor:pointer; }
-    .search-box { flex:1; min-width:180px; max-width:300px; }
-    .search-box input { width:100%; padding:6px 14px; border:1px solid #cbd5e1; border-radius:40px; font-size:0.85rem; background:#f8fafc; }
-    .nav-actions { display:flex; align-items:center; gap:10px; }
-    .nav-actions a, .nav-actions button { background:transparent; border:1px solid #cbd5e1; padding:6px 14px; border-radius:40px; text-decoration:none; color:#1e293b; font-weight:600; font-size:0.8rem; cursor:pointer; }
-    .nav-actions a:hover, .nav-actions button:hover { background:#f1f5f9; }
-    .user-greeting { background:#1e6b4c; color:white; padding:4px 12px; border-radius:40px; display:flex; align-items:center; gap:8px; font-size:0.8rem; }
-    .user-greeting button { background:none; border:none; color:#ffd966; cursor:pointer; font-weight:600; }
-    .dropdown { position:relative; display:inline-block; }
-    .dropdown button { background:transparent; border:none; font-size:1.4rem; cursor:pointer; padding:0 6px; }
-    .dropdown-content { display:none; position:absolute; right:0; background:white; min-width:180px; box-shadow:0 8px 16px rgba(0,0,0,0.1); border-radius:16px; padding:8px 0; z-index:1001; border:1px solid #e2e8f0; }
-    .dropdown-content a, .dropdown-content button { display:block; width:100%; padding:8px 20px; text-align:left; background:none; border:none; font-size:0.85rem; color:#1e293b; cursor:pointer; text-decoration:none; }
-    .dropdown-content a:hover, .dropdown-content button:hover { background:#f1f5f9; }
-    .dropdown.show .dropdown-content { display:block; }
-    .badge-cart, .badge-wishlist { background:#e67e22; color:white; border-radius:50%; padding:0 6px; font-size:0.7rem; margin-left:2px; }
+    /* Same navbar styles – include them */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Roboto, sans-serif; background: #f8fafc; padding-top: 80px; padding-bottom: 40px; }
+    .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: white; border-bottom: 1px solid #e2e8f0; padding: 8px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+    .logo { font-size: 1.6rem; font-weight: 700; background: linear-gradient(135deg, #0f3b2c, #1e6b4c); background-clip: text; -webkit-background-clip: text; color: transparent; cursor: pointer; text-decoration: none; white-space: nowrap; }
+    .logo small { font-size: 0.7rem; background: #e6f7ef; color: #1e6b4c; padding: 2px 8px; border-radius: 40px; margin-left: 6px; }
+    .nav-categories { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav-categories button { background: #f1f5f9; border: none; padding: 6px 14px; border-radius: 40px; font-weight: 600; font-size: 0.8rem; cursor: pointer; }
+    .search-box { flex: 1; min-width: 180px; max-width: 300px; }
+    .search-box input { width: 100%; padding: 6px 14px; border: 1px solid #cbd5e1; border-radius: 40px; font-size: 0.85rem; background: #f8fafc; }
+    .nav-actions { display: flex; align-items: center; gap: 10px; }
+    .nav-actions a, .nav-actions button { background: transparent; border: 1px solid #cbd5e1; padding: 6px 14px; border-radius: 40px; text-decoration: none; color: #1e293b; font-weight: 600; font-size: 0.8rem; cursor: pointer; }
+    .nav-actions a:hover, .nav-actions button:hover { background: #f1f5f9; }
+    .user-greeting { background: #1e6b4c; color: white; padding: 4px 12px; border-radius: 40px; display: flex; align-items: center; gap: 8px; font-size: 0.8rem; }
+    .user-greeting button { background: none; border: none; color: #ffd966; cursor: pointer; font-weight: 600; }
+    .dropdown { position: relative; display: inline-block; }
+    .dropdown button { background: transparent; border: none; font-size: 1.4rem; cursor: pointer; padding: 0 6px; }
+    .dropdown-content { display: none; position: absolute; right: 0; background: white; min-width: 180px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); border-radius: 16px; padding: 8px 0; z-index: 1001; border: 1px solid #e2e8f0; }
+    .dropdown-content a, .dropdown-content button { display: block; width: 100%; padding: 8px 20px; text-align: left; background: none; border: none; font-size: 0.85rem; color: #1e293b; cursor: pointer; text-decoration: none; }
+    .dropdown-content a:hover, .dropdown-content button:hover { background: #f1f5f9; }
+    .dropdown.show .dropdown-content { display: block; }
+    .badge-cart, .badge-wishlist { background: #e67e22; color: white; border-radius: 50%; padding: 0 6px; font-size: 0.7rem; margin-left: 2px; }
 
-    .container { max-width:1000px; margin:0 auto; background:white; border-radius:32px; padding:24px; }
-    .back-link { color:#1e6b4c; text-decoration:none; display:inline-block; margin-bottom:16px; }
-    .listing-card { display:flex; gap:16px; border-bottom:1px solid #e2e8f0; padding:16px 0; align-items:center; }
-    .listing-image { width:80px; height:80px; background:#eef2ff; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:2rem; overflow:hidden; }
-    .listing-image img { width:100%; height:100%; object-fit:cover; }
-    .listing-info { flex:1; }
-    .listing-info h3 { font-weight:bold; }
-    .listing-info .price { color:#e67e22; font-weight:bold; }
-    .empty { text-align:center; padding:40px; color:#6c757d; }
-    .btn-edit { background:#3b82f6; color:white; border:none; padding:6px 16px; border-radius:40px; cursor:pointer; }
-    .btn-delete { background:#ef4444; color:white; border:none; padding:6px 16px; border-radius:40px; cursor:pointer; }
-    .edit-form { margin-top:10px; background:#fef9e6; padding:16px; border-radius:20px; display:none; }
-    .edit-form input, .edit-form textarea, .edit-form select { width:100%; padding:6px; margin:4px 0 12px; border:1px solid #cbd5e1; border-radius:40px; }
+    .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 32px; padding: 24px; }
+    .back-link { color: #1e6b4c; text-decoration: none; display: inline-block; margin-bottom: 16px; }
+    .listing-card { display: flex; gap: 16px; border-bottom: 1px solid #e2e8f0; padding: 16px 0; align-items: center; }
+    .listing-image { width: 80px; height: 80px; background: #eef2ff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 2rem; overflow: hidden; }
+    .listing-image img { width: 100%; height: 100%; object-fit: cover; }
+    .listing-info { flex: 1; }
+    .listing-info h3 { font-weight: bold; }
+    .listing-info .price { color: #e67e22; font-weight: bold; }
+    .empty { text-align: center; padding: 40px; color: #6c757d; }
+    .btn-edit { background: #3b82f6; color: white; border: none; padding: 6px 16px; border-radius: 40px; cursor: pointer; }
+    .btn-delete { background: #ef4444; color: white; border: none; padding: 6px 16px; border-radius: 40px; cursor: pointer; }
+    .edit-form { margin-top: 10px; background: #fef9e6; padding: 16px; border-radius: 20px; display: none; }
+    .edit-form input, .edit-form textarea, .edit-form select { width: 100%; padding: 6px; margin: 4px 0 12px; border: 1px solid #cbd5e1; border-radius: 40px; }
   </style>
 </head>
 <body>
@@ -66,15 +66,46 @@
 </div>
 
 <script>
-  function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+  const API_BASE = 'https://thriftistore-xh2m.onrender.com/api.php';
+
+  async function apiCall(action, method = 'GET', data = null) {
+    const url = `${API_BASE}?action=${action}`;
+    const options = { method };
+    if (data) {
+      options.headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+      options.body = new URLSearchParams(data);
+    }
+    const res = await fetch(url, options);
+    return await res.json();
+  }
+
+  let currentUser = null;
+  let myListings = [];
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+  }
+
+  async function checkUser() {
+    const data = await apiCall('get_user');
+    if (data.success) {
+      currentUser = data.user;
+    } else {
+      currentUser = null;
+      window.location.href = 'login.html';
+    }
+    updateNavbar();
+    updateCounts();
+    loadMyListings();
+  }
+
   function updateNavbar() {
-    const loggedIn = localStorage.getItem('thrifti_logged_in');
     const actions = document.getElementById('navActions');
-    if (loggedIn) {
-      const user = JSON.parse(loggedIn);
-      const isAdmin = (user.email === 'admin@thrifti.com');
+    if (currentUser) {
+      const isAdmin = currentUser.email === 'admin@thrifti.com';
       actions.innerHTML = `
-        <div class="user-greeting">👋 ${escapeHtml(user.name)} <button id="logoutBtn">Logout</button></div>
+        <div class="user-greeting">👋 ${escapeHtml(currentUser.name)} <button id="logoutBtn">Logout</button></div>
         <a href="cart.html" class="cart-link">🛒 <span class="badge-cart" id="cartCount">0</span></a>
         <a href="wishlist.html" class="wishlist-link">💚 <span class="badge-wishlist" id="wishlistCount">0</span></a>
         <div class="dropdown" id="mainDropdown">
@@ -89,10 +120,11 @@
           </div>
         </div>
       `;
-      updateCounts();
-      document.getElementById('logoutBtn')?.addEventListener('click', () => {
-        localStorage.removeItem('thrifti_logged_in');
-        location.reload();
+      document.getElementById('logoutBtn').addEventListener('click', async () => {
+        await apiCall('logout', 'POST');
+        currentUser = null;
+        updateNavbar();
+        window.location.reload();
       });
       document.querySelector('.dropbtn')?.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -101,6 +133,7 @@
       window.addEventListener('click', () => {
         document.getElementById('mainDropdown')?.classList.remove('show');
       });
+      updateCounts();
     } else {
       actions.innerHTML = `
         <a href="login.html" class="login-link">Log in</a>
@@ -114,7 +147,6 @@
           </div>
         </div>
       `;
-      updateCounts();
       document.querySelector('.dropbtn')?.addEventListener('click', (e) => {
         e.stopPropagation();
         document.getElementById('mainDropdown').classList.toggle('show');
@@ -122,44 +154,53 @@
       window.addEventListener('click', () => {
         document.getElementById('mainDropdown')?.classList.remove('show');
       });
+      updateCounts();
     }
   }
-  function updateCounts() {
-    const cart = JSON.parse(localStorage.getItem('thrifti_cart') || '[]');
-    const total = cart.reduce((s,i) => s + i.quantity, 0);
-    const wish = JSON.parse(localStorage.getItem('thrifti_wishlist') || '[]');
-    const cBadge = document.getElementById('cartCount');
-    const wBadge = document.getElementById('wishlistCount');
-    if (cBadge) cBadge.textContent = total;
-    if (wBadge) wBadge.textContent = wish.length;
-  }
-  updateNavbar();
 
-  // My Listings logic
-  function renderMyListings() {
-    const loggedIn = localStorage.getItem('thrifti_logged_in');
-    if (!loggedIn) {
-      document.getElementById('listingsContainer').innerHTML = '<div class="empty">Please log in to view your listings.</div>';
+  async function updateCounts() {
+    if (!currentUser) {
+      document.getElementById('cartCount').textContent = '0';
+      document.getElementById('wishlistCount').textContent = '0';
       return;
     }
-    const user = JSON.parse(loggedIn);
-    const all = JSON.parse(localStorage.getItem('thrifti_listings') || '[]');
-    const mine = all.filter(l => l.sellerEmail === user.email);
+    try {
+      const cartData = await apiCall('cart');
+      if (cartData.success) {
+        const total = cartData.cart.reduce((s, i) => s + i.quantity, 0);
+        document.getElementById('cartCount').textContent = total;
+      }
+      const wishData = await apiCall('wishlist');
+      if (wishData.success) {
+        document.getElementById('wishlistCount').textContent = wishData.wishlist.length;
+      }
+    } catch(e) {}
+  }
+
+  async function loadMyListings() {
+    const data = await apiCall('listings');
+    if (data.success) {
+      myListings = data.listings.filter(l => l.seller_email === currentUser.email);
+      renderMyListings();
+    }
+  }
+
+  function renderMyListings() {
     const container = document.getElementById('listingsContainer');
-    if (mine.length === 0) {
+    if (myListings.length === 0) {
       container.innerHTML = '<div class="empty">You haven\'t listed any items yet. <a href="sell.html" style="color:#1e6b4c;">Sell your first item</a></div>';
       return;
     }
     let html = '';
-    mine.forEach(listing => {
+    myListings.forEach(listing => {
       html += `
         <div class="listing-card" data-id="${listing.id}">
           <div class="listing-image">
-            ${listing.image ? `<img src="${listing.image}" alt="${listing.name}">` : (listing.imageIcon || '📦')}
+            ${listing.image ? `<img src="${listing.image}" alt="${listing.name}">` : (listing.image_icon || '📦')}
           </div>
           <div class="listing-info">
             <h3>${escapeHtml(listing.name)}</h3>
-            <div class="price">R ${listing.price.toLocaleString()}</div>
+            <div class="price">R ${parseFloat(listing.price).toLocaleString()}</div>
             <div>${escapeHtml(listing.location)}</div>
           </div>
           <div>
@@ -172,11 +213,10 @@
     });
     container.innerHTML = html;
 
-    // Edit and Delete events
     document.querySelectorAll('.btn-edit').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = parseInt(btn.dataset.id);
-        const listing = mine.find(l => l.id === id);
+        const listing = myListings.find(l => l.id === id);
         if (!listing) return;
         const formDiv = document.getElementById(`editForm-${id}`);
         formDiv.style.display = 'block';
@@ -195,24 +235,29 @@
           <button class="btn-save-edit" data-id="${id}">Save</button>
           <button class="btn-cancel-edit" data-id="${id}">Cancel</button>
         `;
-        document.querySelector(`#editForm-${id} .btn-save-edit`).addEventListener('click', () => {
+        document.querySelector(`#editForm-${id} .btn-save-edit`).addEventListener('click', async () => {
           const newName = document.getElementById(`editName-${id}`).value.trim();
           const newPrice = parseFloat(document.getElementById(`editPrice-${id}`).value);
           const newCat = document.getElementById(`editCat-${id}`).value;
           const newLoc = document.getElementById(`editLoc-${id}`).value.trim();
           const newDesc = document.getElementById(`editDesc-${id}`).value.trim();
           if (!newName || isNaN(newPrice)) { alert('Fill required fields.'); return; }
-          let listings = JSON.parse(localStorage.getItem('thrifti_listings') || '[]');
-          const idx = listings.findIndex(l => l.id === id);
-          if (idx !== -1) {
-            listings[idx].name = newName;
-            listings[idx].price = newPrice;
-            listings[idx].category = newCat;
-            listings[idx].location = newLoc;
-            listings[idx].description = newDesc;
-            localStorage.setItem('thrifti_listings', JSON.stringify(listings));
+          const data = await apiCall('add_listing', 'POST', {
+            id: listing.id,
+            name: newName,
+            price: newPrice,
+            category: newCat,
+            location: newLoc,
+            description: newDesc,
+            image_icon: listing.image_icon,
+            seller_name: currentUser.name,
+            seller_email: currentUser.email
+          });
+          if (data.success) {
             alert('Listing updated.');
-            renderMyListings();
+            loadMyListings();
+          } else {
+            alert('Update failed: ' + data.error);
           }
         });
         document.querySelector(`#editForm-${id} .btn-cancel-edit`).addEventListener('click', () => {
@@ -222,18 +267,22 @@
     });
 
     document.querySelectorAll('.btn-delete').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const id = parseInt(btn.dataset.id);
         if (confirm('Delete this listing?')) {
-          let listings = JSON.parse(localStorage.getItem('thrifti_listings') || '[]');
-          listings = listings.filter(l => l.id !== id);
-          localStorage.setItem('thrifti_listings', JSON.stringify(listings));
-          renderMyListings();
+          const data = await apiCall('delete_listing', 'POST', { id });
+          if (data.success) {
+            alert('Deleted.');
+            loadMyListings();
+          } else {
+            alert('Delete failed: ' + data.error);
+          }
         }
       });
     });
   }
-  renderMyListings();
+
+  checkUser();
 </script>
 </body>
 </html>
