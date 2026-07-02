@@ -65,20 +65,20 @@ switch ($action) {
         break;
 
     // ---------- LISTINGS ----------
-    case 'listings':
-        $category = $_GET['category'] ?? '';
-        $sql = "SELECT * FROM listings WHERE stock > 0";
-        if ($category && $category !== 'all') {
-            $sql .= " AND category = ? ORDER BY id DESC";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([$category]);
-        } else {
-            $sql .= " ORDER BY id DESC";
-            $stmt = $pdo->query($sql);
-        }
-        $listings = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        echo json_encode(['success' => true, 'listings' => $listings]);
-        break;
+ case 'listings':
+    $category = $_GET['category'] ?? '';
+    $sql = "SELECT * FROM listings WHERE (stock > 0 OR stock IS NULL)";
+    if ($category && $category !== 'all') {
+        $sql .= " AND category = ? ORDER BY id DESC";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$category]);
+    } else {
+        $sql .= " ORDER BY id DESC";
+        $stmt = $pdo->query($sql);
+    }
+    $listings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    echo json_encode(['success' => true, 'listings' => $listings]);
+    break;
 
     case 'add_listing':
         if (!isset($_SESSION['user_id'])) {
