@@ -66,19 +66,20 @@ switch ($action) {
 
     // ---------- LISTINGS ----------
     case 'listings':
-    $category = $_GET['category'] ?? '';
-    $sql = "SELECT * FROM listings WHERE (stock > 0 OR stock IS NULL)";
-    if ($category && $category !== 'all') {
-        $sql .= " AND category = ? ORDER BY id DESC";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$category]);
-    } else {
-        $sql .= " ORDER BY id DESC";
-        $stmt = $pdo->query($sql);
-    }
-    $listings = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    echo json_encode(['success' => true, 'listings' => $listings]);
-    break;
+        $category = $_GET['category'] ?? '';
+        // Show items with stock > 0 OR stock IS NULL (for old items)
+        $sql = "SELECT * FROM listings WHERE (stock > 0 OR stock IS NULL)";
+        if ($category && $category !== 'all') {
+            $sql .= " AND category = ? ORDER BY id DESC";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$category]);
+        } else {
+            $sql .= " ORDER BY id DESC";
+            $stmt = $pdo->query($sql);
+        }
+        $listings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['success' => true, 'listings' => $listings]);
+        break;
 
     case 'add_listing':
         if (!isset($_SESSION['user_id'])) {
@@ -90,13 +91,32 @@ switch ($action) {
         $price = $_POST['price'];
         $description = $_POST['description'] ?? '';
         $location = $_POST['location'];
+        $stock = (int)($_POST['stock'] ?? 1);
         $image = $_POST['image'] ?? null;
         $image_icon = $_POST['image_icon'] ?? '📦';
         $seller_name = $_POST['seller_name'];
         $seller_email = $_POST['seller_email'];
-        $stmt = $pdo->prepare("INSERT INTO listings (name, category, price, description, location, image, image_icon, seller_name, seller_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$name, $category, $price, $description, $location, $image, $image_icon, $seller_name, $seller_email]);
+        $stmt = $pdo->prepare("INSERT INTO listings (name, category, price, description, location, stock, image, image_icon, seller_name, seller_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$name, $category, $price, $description, $location, $stock, $image, $image_icon, $seller_name, $seller_email]);
         echo json_encode(['success' => true, 'id' => $pdo->lastInsertId()]);
+        break;
+
+    case 'update_listing':
+        if (!isset($_SESSION['user_id'])) {
+            echo json_encode(['success' => false, 'error' => 'Not logged in']);
+            break;
+        }
+        $id = $_POST['id'];
+        $name = $_POST['name'];
+        $category = $_POST['category'];
+        $price = $_POST['price'];
+        $description = $_POST['description'] ?? '';
+        $location = $_POST['location'];
+        $stock = (int)($_POST['stock'] ?? 1);
+        $image = $_POST['image'] ?? null;
+        $stmt = $pdo->prepare("UPDATE listings SET name=?, category=?, price=?, description=?, location=?, stock=?, image=? WHERE id=? AND seller_email=?");
+        $stmt->execute([$name, $category, $price, $description, $location, $stock, $image, $id, $_SESSION['user_email']]);
+        echo json_encode(['success' => true]);
         break;
 
     case 'delete_listing':
@@ -118,21 +138,40 @@ switch ($action) {
         }
         $user_id = $_SESSION['user_id'];
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-            $stmt = $pdo->prepare("SELECT c.*, l.name, l.price, l.image, l.image_icon FROM carts c JOIN listings l ON c.listing_id = l.id WHERE c.user_id = ?");
+            $stmt = $pdo->prepare("SELECT c.*, l.name, l.price, l.image, l.image_icon, l.stock FROM carts c JOIN listings l ON c.listing_id = l.id WHERE c.user_id = ?");
             $stmt->execute([$user_id]);
             $cart = $stmt->fetchAll(PDO::FETCH_ASSOC);
             echo json_encode(['success' => true, 'cart' => $cart]);
         } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $listing_id = $_POST['listing_id'];
-            $quantity = $_POST['quantity'] ?? 1;
+            $quantity = isset($_POST['quantity']) ? (int)$_POST['quantity'] : 1;
+            // Check stock
+            $stmt = $pdo->prepare("SELECT stock FROM listings WHERE id = ?");
+            $stmt->execute([$listing_id]);
+            $listing = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$listing) {
+                echo json_encode(['success' => false, 'error' => 'Listing not found']);
+                break;
+            }
+            if ($listing['stock'] < $quantity) {
+                echo json_encode(['success' => false, 'error' => 'Insufficient stock']);
+                break;
+            }
             $stmt = $pdo->prepare("SELECT * FROM carts WHERE user_id = ? AND listing_id = ?");
             $stmt->execute([$user_id, $listing_id]);
             if ($stmt->rowCount() > 0) {
-                $stmt = $pdo->prepare("UPDATE carts SET quantity = quantity + ? WHERE user_id = ? AND listing_id = ?");
-                $stmt->execute([$quantity, $user_id, $listing_id]);
+                if ($quantity > 0) {
+                    $stmt = $pdo->prepare("UPDATE carts SET quantity = ? WHERE user_id = ? AND listing_id = ?");
+                    $stmt->execute([$quantity, $user_id, $listing_id]);
+                } else {
+                    $stmt = $pdo->prepare("DELETE FROM carts WHERE user_id = ? AND listing_id = ?");
+                    $stmt->execute([$user_id, $listing_id]);
+                }
             } else {
-                $stmt = $pdo->prepare("INSERT INTO carts (user_id, listing_id, quantity) VALUES (?, ?, ?)");
-                $stmt->execute([$user_id, $listing_id, $quantity]);
+                if ($quantity > 0) {
+                    $stmt = $pdo->prepare("INSERT INTO carts (user_id, listing_id, quantity) VALUES (?, ?, ?)");
+                    $stmt->execute([$user_id, $listing_id, $quantity]);
+                }
             }
             echo json_encode(['success' => true]);
         } elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
@@ -184,6 +223,16 @@ switch ($action) {
             echo json_encode(['success' => false, 'error' => 'Cart empty']);
             break;
         }
+        foreach ($items as $item) {
+            $stmt = $pdo->prepare("SELECT stock FROM listings WHERE id = ?");
+            $stmt->execute([$item['listing_id']]);
+            $listing = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$listing || $listing['stock'] < $item['quantity']) {
+                echo json_encode(['success' => false, 'error' => 'Insufficient stock for item ID ' . $item['listing_id']]);
+                break 2;
+            }
+        }
+
         $total = 0;
         foreach ($items as $item) $total += $item['price'] * $item['quantity'];
         $fee = round($total * 0.15, 2);
@@ -197,6 +246,10 @@ switch ($action) {
             foreach ($items as $item) {
                 $stmt = $pdo->prepare("INSERT INTO order_items (order_id, listing_id, quantity, price) VALUES (?, ?, ?, ?)");
                 $stmt->execute([$order_id, $item['listing_id'], $item['quantity'], $item['price']]);
+                $stmt = $pdo->prepare("UPDATE listings SET stock = stock - ? WHERE id = ?");
+                $stmt->execute([$item['quantity'], $item['listing_id']]);
+                $stmt = $pdo->prepare("DELETE FROM listings WHERE id = ? AND stock <= 0");
+                $stmt->execute([$item['listing_id']]);
             }
             $stmt = $pdo->prepare("DELETE FROM carts WHERE user_id = ?");
             $stmt->execute([$user_id]);
