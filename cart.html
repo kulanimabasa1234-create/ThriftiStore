@@ -5,44 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cart | THRIFTI</title>
   <style>
-    /* Same navbar styles (copy from product.html) – we'll keep the full code short by repeating it */
+    /* Same navbar styles as product.html – include them */
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', Roboto, sans-serif;
-      background: #f8fafc;
-      padding-top: 80px;
-      padding-bottom: 40px;
-    }
-    /* Navbar (same as product.html) – we'll include it for completeness */
-    .navbar {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 1000;
-      background: white;
-      border-bottom: 1px solid #e2e8f0;
-      padding: 8px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-    }
-    .logo {
-      font-size: 1.6rem;
-      font-weight: 700;
-      background: linear-gradient(135deg, #0f3b2c, #1e6b4c);
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
-      cursor: pointer;
-      text-decoration: none;
-      white-space: nowrap;
-    }
+    body { font-family: 'Segoe UI', Roboto, sans-serif; background: #f8fafc; padding-top: 80px; padding-bottom: 40px; }
+    .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: white; border-bottom: 1px solid #e2e8f0; padding: 8px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+    .logo { font-size: 1.6rem; font-weight: 700; background: linear-gradient(135deg, #0f3b2c, #1e6b4c); background-clip: text; -webkit-background-clip: text; color: transparent; cursor: pointer; text-decoration: none; white-space: nowrap; }
     .logo small { font-size: 0.7rem; background: #e6f7ef; color: #1e6b4c; padding: 2px 8px; border-radius: 40px; margin-left: 6px; }
     .nav-categories { display: flex; gap: 8px; flex-wrap: wrap; }
     .nav-categories button { background: #f1f5f9; border: none; padding: 6px 14px; border-radius: 40px; font-weight: 600; font-size: 0.8rem; cursor: pointer; }
-    .nav-categories button.active { background: #1e6b4c; color: white; }
     .search-box { flex: 1; min-width: 180px; max-width: 300px; }
     .search-box input { width: 100%; padding: 6px 14px; border: 1px solid #cbd5e1; border-radius: 40px; font-size: 0.85rem; background: #f8fafc; }
     .nav-actions { display: flex; align-items: center; gap: 10px; }
@@ -58,14 +28,7 @@
     .dropdown.show .dropdown-content { display: block; }
     .badge-cart, .badge-wishlist { background: #e67e22; color: white; border-radius: 50%; padding: 0 6px; font-size: 0.7rem; margin-left: 2px; }
 
-    /* Cart page */
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 32px;
-      padding: 24px;
-    }
+    .container { max-width: 900px; margin: 0 auto; background: white; border-radius: 32px; padding: 24px; }
     .back-link { color: #1e6b4c; text-decoration: none; display: inline-block; margin-bottom: 16px; }
     .cart-item { display: flex; gap: 16px; border-bottom: 1px solid #e2e8f0; padding: 16px 0; align-items: center; }
     .cart-item-image { width: 80px; height: 80px; background: #eef2ff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 2rem; overflow: hidden; }
@@ -96,7 +59,6 @@
   </style>
 </head>
 <body>
-<!-- Navbar (same as product) -->
 <nav class="navbar" id="mainNavbar">
   <a href="index.html" class="logo">THRIFTI <small>local · trusted</small></a>
   <div class="nav-categories">
@@ -119,7 +81,6 @@
   <div id="cartSummary"></div>
 </div>
 
-<!-- Payment Modal -->
 <div id="paymentModal" class="modal">
   <div class="modal-content">
     <span class="close-modal" id="closeModal">&times;</span>
@@ -134,16 +95,44 @@
 </div>
 
 <script>
-  // ------ Navbar (same as product) ------
-  function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+  const API_BASE = 'https://thriftistore-xh2m.onrender.com/api.php';
+
+  async function apiCall(action, method = 'GET', data = null) {
+    const url = `${API_BASE}?action=${action}`;
+    const options = { method };
+    if (data) {
+      options.headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+      options.body = new URLSearchParams(data);
+    }
+    const res = await fetch(url, options);
+    return await res.json();
+  }
+
+  let currentUser = null;
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+  }
+
+  async function checkUser() {
+    const data = await apiCall('get_user');
+    if (data.success) {
+      currentUser = data.user;
+    } else {
+      currentUser = null;
+      window.location.href = 'login.html';
+    }
+    updateNavbar();
+    updateCounts();
+  }
+
   function updateNavbar() {
-    const loggedIn = localStorage.getItem('thrifti_logged_in');
     const actions = document.getElementById('navActions');
-    if (loggedIn) {
-      const user = JSON.parse(loggedIn);
-      const isAdmin = (user.email === 'admin@thrifti.com');
+    if (currentUser) {
+      const isAdmin = currentUser.email === 'admin@thrifti.com';
       actions.innerHTML = `
-        <div class="user-greeting">👋 ${escapeHtml(user.name)} <button id="logoutBtn">Logout</button></div>
+        <div class="user-greeting">👋 ${escapeHtml(currentUser.name)} <button id="logoutBtn">Logout</button></div>
         <a href="cart.html" class="cart-link">🛒 <span class="badge-cart" id="cartCount">0</span></a>
         <a href="wishlist.html" class="wishlist-link">💚 <span class="badge-wishlist" id="wishlistCount">0</span></a>
         <div class="dropdown" id="mainDropdown">
@@ -158,10 +147,11 @@
           </div>
         </div>
       `;
-      updateCounts();
-      document.getElementById('logoutBtn')?.addEventListener('click', () => {
-        localStorage.removeItem('thrifti_logged_in');
-        location.reload();
+      document.getElementById('logoutBtn').addEventListener('click', async () => {
+        await apiCall('logout', 'POST');
+        currentUser = null;
+        updateNavbar();
+        window.location.reload();
       });
       document.querySelector('.dropbtn')?.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -170,6 +160,7 @@
       window.addEventListener('click', () => {
         document.getElementById('mainDropdown')?.classList.remove('show');
       });
+      updateCounts();
     } else {
       actions.innerHTML = `
         <a href="login.html" class="login-link">Log in</a>
@@ -183,7 +174,6 @@
           </div>
         </div>
       `;
-      updateCounts();
       document.querySelector('.dropbtn')?.addEventListener('click', (e) => {
         e.stopPropagation();
         document.getElementById('mainDropdown').classList.toggle('show');
@@ -191,29 +181,35 @@
       window.addEventListener('click', () => {
         document.getElementById('mainDropdown')?.classList.remove('show');
       });
+      updateCounts();
     }
   }
-  function updateCounts() {
-    const cart = JSON.parse(localStorage.getItem('thrifti_cart') || '[]');
-    const total = cart.reduce((s,i) => s + i.quantity, 0);
-    const wish = JSON.parse(localStorage.getItem('thrifti_wishlist') || '[]');
-    const cBadge = document.getElementById('cartCount');
-    const wBadge = document.getElementById('wishlistCount');
-    if (cBadge) cBadge.textContent = total;
-    if (wBadge) wBadge.textContent = wish.length;
+
+  async function updateCounts() {
+    if (!currentUser) {
+      document.getElementById('cartCount').textContent = '0';
+      document.getElementById('wishlistCount').textContent = '0';
+      return;
+    }
+    try {
+      const cartData = await apiCall('cart');
+      if (cartData.success) {
+        const total = cartData.cart.reduce((s, i) => s + i.quantity, 0);
+        document.getElementById('cartCount').textContent = total;
+      }
+      const wishData = await apiCall('wishlist');
+      if (wishData.success) {
+        document.getElementById('wishlistCount').textContent = wishData.wishlist.length;
+      }
+    } catch(e) {}
   }
-  updateNavbar();
 
-  // ------ Cart logic ------
-  function loadCart() { return JSON.parse(localStorage.getItem('thrifti_cart') || '[]'); }
-  function saveCart(c) { localStorage.setItem('thrifti_cart', JSON.stringify(c)); }
-  function loadListings() { return JSON.parse(localStorage.getItem('thrifti_listings') || '[]'); }
-  function saveListings(l) { localStorage.setItem('thrifti_listings', JSON.stringify(l)); }
-  function loadOrders() { return JSON.parse(localStorage.getItem('thrifti_orders') || '[]'); }
-  function saveOrders(o) { localStorage.setItem('thrifti_orders', JSON.stringify(o)); }
-
-  function renderCart() {
-    let cart = loadCart();
+  // ---------- Cart logic ----------
+  async function renderCart() {
+    if (!currentUser) return;
+    const data = await apiCall('cart');
+    if (!data.success) { alert('Failed to load cart'); return; }
+    const cart = data.cart;
     const cartDiv = document.getElementById('cartItems');
     const summaryDiv = document.getElementById('cartSummary');
     if (cart.length === 0) {
@@ -227,18 +223,18 @@
       const itemTotal = item.price * item.quantity;
       total += itemTotal;
       itemsHtml += `
-        <div class="cart-item" data-id="${item.id}">
+        <div class="cart-item" data-id="${item.listing_id}">
           <div class="cart-item-image">
-            ${item.image ? `<img src="${item.image}" alt="${item.name}">` : (item.imageIcon || '📦')}
+            ${item.image ? `<img src="${item.image}" alt="${item.name}">` : (item.image_icon || '📦')}
           </div>
           <div class="cart-item-details">
             <div class="cart-item-name">${escapeHtml(item.name)}</div>
-            <div class="cart-item-price">R ${item.price.toLocaleString()}</div>
+            <div class="cart-item-price">R ${parseFloat(item.price).toLocaleString()}</div>
             <div class="quantity-control">
-              <button class="qty-minus" data-id="${item.id}">-</button>
+              <button class="qty-minus" data-id="${item.listing_id}">-</button>
               <span>${item.quantity}</span>
-              <button class="qty-plus" data-id="${item.id}">+</button>
-              <button class="remove-btn" data-id="${item.id}">Remove</button>
+              <button class="qty-plus" data-id="${item.listing_id}">+</button>
+              <button class="remove-btn" data-id="${item.listing_id}">Remove</button>
             </div>
           </div>
           <div style="font-weight:bold;">R ${itemTotal.toLocaleString()}</div>
@@ -264,65 +260,53 @@
     document.getElementById('checkoutBtn').addEventListener('click', showPaymentModal);
   }
 
-  function updateQuantity(id, delta) {
-    let cart = loadCart();
-    const idx = cart.findIndex(i => i.id === id);
-    if (idx !== -1) {
-      cart[idx].quantity += delta;
-      if (cart[idx].quantity <= 0) cart.splice(idx, 1);
-      saveCart(cart);
-      renderCart();
-      updateCounts();
+  async function updateQuantity(listingId, delta) {
+    const data = await apiCall('cart');
+    if (!data.success) return;
+    const cart = data.cart;
+    const item = cart.find(i => i.listing_id === listingId);
+    if (!item) return;
+    const newQty = item.quantity + delta;
+    if (newQty <= 0) {
+      await removeItem(listingId);
+    } else {
+      await apiCall('cart', 'POST', { listing_id: listingId, quantity: 1 });
     }
-  }
-  function removeItem(id) {
-    let cart = loadCart();
-    cart = cart.filter(i => i.id !== id);
-    saveCart(cart);
     renderCart();
     updateCounts();
   }
 
-  // Payment modal
+  async function removeItem(listingId) {
+    await apiCall('cart', 'DELETE', { listing_id: listingId });
+    renderCart();
+    updateCounts();
+  }
+
+  // ---------- Payment ----------
   let currentTotal = 0;
-  function showPaymentModal() {
-    const cart = loadCart();
-    if (cart.length === 0) { alert('Cart empty.'); return; }
+
+  async function showPaymentModal() {
+    const data = await apiCall('cart');
+    if (!data.success || data.cart.length === 0) { alert('Cart empty.'); return; }
     let total = 0;
-    cart.forEach(i => total += i.price * i.quantity);
+    data.cart.forEach(i => total += i.price * i.quantity);
     currentTotal = total;
     document.getElementById('modalTotal').textContent = total.toLocaleString();
     document.getElementById('paymentModal').style.display = 'flex';
   }
-  document.getElementById('simulatePayBtn').addEventListener('click', () => {
-    const cart = loadCart();
-    if (cart.length === 0) { document.getElementById('paymentModal').style.display = 'none'; return; }
-    const loggedIn = localStorage.getItem('thrifti_logged_in');
-    if (!loggedIn) { alert('Please log in first.'); document.getElementById('paymentModal').style.display = 'none'; return; }
-    const buyer = JSON.parse(loggedIn);
-    // Remove items from listings
-    let listings = loadListings();
-    const purchasedIds = cart.map(i => i.id);
-    listings = listings.filter(l => !purchasedIds.includes(l.id));
-    saveListings(listings);
-    // Record order
-    let orders = loadOrders();
-    orders.push({
-      id: Date.now(),
-      buyerName: buyer.name,
-      buyerEmail: buyer.email,
-      items: cart.map(i => ({ id: i.id, name: i.name, quantity: i.quantity, price: i.price })),
-      total: currentTotal,
-      date: Date.now()
-    });
-    saveOrders(orders);
-    // Clear cart
-    saveCart([]);
-    alert(`✅ Purchase successful! R ${currentTotal.toLocaleString()}`);
-    document.getElementById('paymentModal').style.display = 'none';
-    renderCart();
-    updateCounts();
+
+  document.getElementById('simulatePayBtn').addEventListener('click', async () => {
+    const data = await apiCall('checkout', 'POST');
+    if (data.success) {
+      alert(`✅ Payment successful! Order #${data.order_id} – R ${data.total.toLocaleString()}`);
+      document.getElementById('paymentModal').style.display = 'none';
+      renderCart();
+      updateCounts();
+    } else {
+      alert('Checkout failed: ' + data.error);
+    }
   });
+
   document.getElementById('closeModal').addEventListener('click', () => {
     document.getElementById('paymentModal').style.display = 'none';
   });
@@ -332,7 +316,10 @@
     }
   });
 
-  renderCart();
+  // ---------- Init ----------
+  checkUser().then(() => {
+    if (currentUser) renderCart();
+  });
 </script>
 </body>
 </html>
