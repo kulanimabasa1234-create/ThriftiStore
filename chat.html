@@ -230,4 +230,47 @@
     intervalId = setInterval(loadMessages, 2000);
   }
 
- 
+  async function loadMessages() {
+    if (!otherUserId) return;
+    const data = await apiCall('get_messages', 'GET', null, { other_user: otherUserId });
+    if (data.success) {
+      messages = data.messages;
+      displayMessages();
+    }
+  }
+
+  function displayMessages() {
+    const area = document.getElementById('messagesArea');
+    if (!area) return;
+    area.innerHTML = '';
+    messages.forEach(msg => {
+      const isMe = msg.sender_id == currentUser.id;
+      const div = document.createElement('div');
+      div.className = `message ${isMe ? 'message-me' : 'message-other'}`;
+      div.innerHTML = `
+        <div>${escapeHtml(msg.message)}</div>
+        <div class="message-time">${new Date(msg.sent_at).toLocaleString()}</div>
+      `;
+      area.appendChild(div);
+    });
+    area.scrollTop = area.scrollHeight;
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('messageInput');
+    const text = input.value.trim();
+    if (!text || !otherUserId) return;
+    const data = await apiCall('send_message', 'POST', {
+      receiver_id: otherUserId,
+      message: text
+    });
+    if (data.success) {
+      input.value = '';
+      loadMessages();
+    }
+  }
+
+  checkUser();
+</script>
+</body>
+</html>
