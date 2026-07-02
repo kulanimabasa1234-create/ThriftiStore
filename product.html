@@ -6,178 +6,36 @@
   <title>Product | THRIFTI</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', Roboto, sans-serif;
-      background: #f8fafc;
-      padding-top: 80px;
-      padding-bottom: 40px;
-    }
-    /* Navbar (same as index) – omitted for brevity, but include full navbar styles from index.html */
-    .navbar {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 1000;
-      background: white;
-      border-bottom: 1px solid #e2e8f0;
-      padding: 8px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-    }
-    .logo {
-      font-size: 1.6rem;
-      font-weight: 700;
-      background: linear-gradient(135deg, #0f3b2c, #1e6b4c);
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
-      cursor: pointer;
-      text-decoration: none;
-      white-space: nowrap;
-    }
-    .logo small {
-      font-size: 0.7rem;
-      background: #e6f7ef;
-      color: #1e6b4c;
-      padding: 2px 8px;
-      border-radius: 40px;
-      margin-left: 6px;
-    }
-    .nav-categories {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .nav-categories button {
-      background: #f1f5f9;
-      border: none;
-      padding: 6px 14px;
-      border-radius: 40px;
-      font-weight: 600;
-      font-size: 0.8rem;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    .nav-categories button.active {
-      background: #1e6b4c;
-      color: white;
-    }
-    .search-box {
-      flex: 1;
-      min-width: 180px;
-      max-width: 300px;
-    }
-    .search-box input {
-      width: 100%;
-      padding: 6px 14px;
-      border: 1px solid #cbd5e1;
-      border-radius: 40px;
-      font-size: 0.85rem;
-      background: #f8fafc;
-    }
-    .nav-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .nav-actions a, .nav-actions button {
-      background: transparent;
-      border: 1px solid #cbd5e1;
-      padding: 6px 14px;
-      border-radius: 40px;
-      text-decoration: none;
-      color: #1e293b;
-      font-weight: 600;
-      font-size: 0.8rem;
-      cursor: pointer;
-      transition: 0.2s;
-      white-space: nowrap;
-    }
+    body { font-family: 'Segoe UI', Roboto, sans-serif; background: #f8fafc; padding-top: 80px; padding-bottom: 40px; }
+    .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: white; border-bottom: 1px solid #e2e8f0; padding: 8px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+    .logo { font-size: 1.6rem; font-weight: 700; background: linear-gradient(135deg, #0f3b2c, #1e6b4c); background-clip: text; -webkit-background-clip: text; color: transparent; cursor: pointer; text-decoration: none; white-space: nowrap; }
+    .logo small { font-size: 0.7rem; background: #e6f7ef; color: #1e6b4c; padding: 2px 8px; border-radius: 40px; margin-left: 6px; }
+    .nav-categories { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav-categories button { background: #f1f5f9; border: none; padding: 6px 14px; border-radius: 40px; font-weight: 600; font-size: 0.8rem; cursor: pointer; }
+    .search-box { flex: 1; min-width: 180px; max-width: 300px; }
+    .search-box input { width: 100%; padding: 6px 14px; border: 1px solid #cbd5e1; border-radius: 40px; font-size: 0.85rem; background: #f8fafc; }
+    .nav-actions { display: flex; align-items: center; gap: 10px; }
+    .nav-actions a, .nav-actions button { background: transparent; border: 1px solid #cbd5e1; padding: 6px 14px; border-radius: 40px; text-decoration: none; color: #1e293b; font-weight: 600; font-size: 0.8rem; cursor: pointer; }
     .nav-actions a:hover, .nav-actions button:hover { background: #f1f5f9; }
-    .user-greeting {
-      background: #1e6b4c;
-      color: white;
-      padding: 4px 12px;
-      border-radius: 40px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.8rem;
-    }
-    .user-greeting button {
-      background: none;
-      border: none;
-      color: #ffd966;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    .dropdown {
-      position: relative;
-      display: inline-block;
-    }
-    .dropdown button {
-      background: transparent;
-      border: none;
-      font-size: 1.4rem;
-      cursor: pointer;
-      padding: 0 6px;
-    }
-    .dropdown-content {
-      display: none;
-      position: absolute;
-      right: 0;
-      background: white;
-      min-width: 180px;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-      border-radius: 16px;
-      padding: 8px 0;
-      z-index: 1001;
-      border: 1px solid #e2e8f0;
-    }
-    .dropdown-content a, .dropdown-content button {
-      display: block;
-      width: 100%;
-      padding: 8px 20px;
-      text-align: left;
-      background: none;
-      border: none;
-      font-size: 0.85rem;
-      color: #1e293b;
-      cursor: pointer;
-      text-decoration: none;
-    }
+    .user-greeting { background: #1e6b4c; color: white; padding: 4px 12px; border-radius: 40px; display: flex; align-items: center; gap: 8px; font-size: 0.8rem; }
+    .user-greeting button { background: none; border: none; color: #ffd966; cursor: pointer; font-weight: 600; }
+    .dropdown { position: relative; display: inline-block; }
+    .dropdown button { background: transparent; border: none; font-size: 1.4rem; cursor: pointer; padding: 0 6px; }
+    .dropdown-content { display: none; position: absolute; right: 0; background: white; min-width: 180px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); border-radius: 16px; padding: 8px 0; z-index: 1001; border: 1px solid #e2e8f0; }
+    .dropdown-content a, .dropdown-content button { display: block; width: 100%; padding: 8px 20px; text-align: left; background: none; border: none; font-size: 0.85rem; color: #1e293b; cursor: pointer; text-decoration: none; }
     .dropdown-content a:hover, .dropdown-content button:hover { background: #f1f5f9; }
     .dropdown.show .dropdown-content { display: block; }
-    .badge-cart, .badge-wishlist {
-      background: #e67e22;
-      color: white;
-      border-radius: 50%;
-      padding: 0 6px;
-      font-size: 0.7rem;
-      margin-left: 2px;
-    }
+    .badge-cart, .badge-wishlist { background: #e67e22; color: white; border-radius: 50%; padding: 0 6px; font-size: 0.7rem; margin-left: 2px; }
 
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 32px;
-      padding: 24px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    }
-    .back-link {
-      color: #1e6b4c;
-      text-decoration: none;
-      display: inline-block;
-      margin-bottom: 16px;
-    }
+    .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 32px; padding: 24px; }
+    .back-link { color: #1e6b4c; text-decoration: none; display: inline-block; margin-bottom: 16px; }
     .product-image { text-align: center; margin: 16px 0; }
     .product-image img { max-width: 100%; max-height: 300px; border-radius: 20px; }
     .price { font-size: 2rem; color: #e67e22; font-weight: 800; margin: 12px 0; }
     .info { background: #f1f5f9; padding: 16px; border-radius: 20px; margin: 16px 0; }
+    .stock-info { display: inline-block; background: #e6f7ef; color: #1e6b4c; padding: 4px 12px; border-radius: 40px; font-weight: 600; }
+    .stock-low { background: #fed7aa; color: #9a3412; }
+    .stock-out { background: #fee2e2; color: #b91c1c; }
     .btn-group { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
     .btn-group .btn {
       flex: 1 0 auto;
@@ -205,6 +63,18 @@
     .btn-edit:hover { background: #2563eb; }
     .btn-delete { background: #ef4444; color: white; }
     .btn-delete:hover { background: #dc2626; }
+    .btn-disabled { background: #9ca3af; color: #4b5563; cursor: not-allowed; }
+
+    .edit-form { margin-top: 20px; background: #fef9e6; padding: 20px; border-radius: 20px; display: none; }
+    .edit-form input, .edit-form textarea, .edit-form select {
+      width: 100%;
+      padding: 8px;
+      margin: 8px 0 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 40px;
+    }
+    .edit-form .btn-save { background: #1e6b4c; color: white; border: none; padding: 8px 24px; border-radius: 40px; cursor: pointer; }
+    .edit-form .btn-cancel { background: #9ca3af; color: white; border: none; padding: 8px 24px; border-radius: 40px; cursor: pointer; margin-left: 8px; }
   </style>
 </head>
 <body>
@@ -243,8 +113,10 @@
   }
 
   let currentUser = null;
+  let productData = null;
+  const urlParams = new URLSearchParams(window.location.search);
+  const productId = urlParams.get('id');
 
-  // ---------- Navbar (same as index) ----------
   function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
@@ -259,6 +131,8 @@
     }
     updateNavbar();
     updateCounts();
+    if (!productData) loadProduct();
+    else renderProduct();
   }
 
   function updateNavbar() {
@@ -303,6 +177,7 @@
         <div class="dropdown" id="mainDropdown">
           <button class="dropbtn">⋮</button>
           <div class="dropdown-content">
+            <a href="login.html?admin=1">🔐 Admin Login</a>
             <a href="manual.html">📖 User Manual</a>
             <a href="contact.html">📧 Contact</a>
           </div>
@@ -338,19 +213,13 @@
     } catch(e) {}
   }
 
-  // ---------- Product logic ----------
-  const urlParams = new URLSearchParams(window.location.search);
-  const productId = urlParams.get('id');
-
-  let productData = null;
-
   async function loadProduct() {
     if (!productId) { document.getElementById('productDetail').innerHTML = '<p>Invalid product.</p>'; return; }
     const data = await apiCall('listings');
     if (data.success) {
       productData = data.listings.find(p => p.id == productId);
       if (!productData) {
-        document.getElementById('productDetail').innerHTML = '<p>Product not found.</p>';
+        document.getElementById('productDetail').innerHTML = '<p>Product not found or out of stock.</p>';
         return;
       }
       renderProduct();
@@ -360,14 +229,25 @@
   function renderProduct() {
     const p = productData;
     const isSeller = currentUser && currentUser.email === p.seller_email;
+    const stock = parseInt(p.stock) || 0;
+    const stockClass = stock <= 0 ? 'stock-out' : (stock <= 3 ? 'stock-low' : '');
+    const stockText = stock <= 0 ? 'Out of Stock' : `${stock} left`;
+
     let buttons = '';
     if (isSeller) {
-      buttons = `<div class="btn-group"><button class="btn btn-edit" id="editBtn">✏️ Edit</button><button class="btn btn-delete" id="deleteBtn">🗑️ Delete</button></div>`;
-    } else {
       buttons = `
         <div class="btn-group">
-          <button class="btn btn-primary" id="addToCartBtn">🛒 Add to Cart</button>
-          <button class="btn btn-warning" id="buyNowBtn">⚡ Buy Now</button>
+          <button class="btn btn-edit" id="editBtn">✏️ Edit</button>
+          <button class="btn btn-delete" id="deleteBtn">🗑️ Delete</button>
+        </div>
+        <div class="edit-form" id="editFormContainer"></div>
+      `;
+    } else {
+      const disableBuy = stock <= 0 || !currentUser;
+      buttons = `
+        <div class="btn-group">
+          <button class="btn btn-primary" id="addToCartBtn" ${disableBuy ? 'disabled' : ''}>🛒 Add to Cart</button>
+          <button class="btn btn-warning" id="buyNowBtn" ${disableBuy ? 'disabled' : ''}>⚡ Buy Now</button>
           <a href="chat.html?sellerEmail=${encodeURIComponent(p.seller_email)}&productName=${encodeURIComponent(p.name)}&productId=${p.id}" class="btn btn-chat" style="display:inline-block; text-align:center;">💬 Chat</a>
           <button class="btn btn-wishlist" id="wishlistBtn">🤍 Add to Wishlist</button>
         </div>
@@ -377,6 +257,7 @@
         </div>
       `;
     }
+
     document.getElementById('productDetail').innerHTML = `
       <div class="product-image">${p.image ? `<img src="${p.image}">` : `<div style="font-size:5rem;">${p.image_icon || '📦'}</div>`}</div>
       <h1>${escapeHtml(p.name)}</h1>
@@ -385,6 +266,7 @@
         <p><strong>📍 Location:</strong> ${escapeHtml(p.location)}</p>
         <p><strong>👤 Seller:</strong> ${escapeHtml(p.seller_name || p.seller_email)}</p>
         <p><strong>📝 Description:</strong> ${escapeHtml(p.description || '')}</p>
+        <p><strong>📦 Stock:</strong> <span class="stock-info ${stockClass}">${stockText}</span></p>
       </div>
       ${buttons}
       <a href="cart.html" class="back-link">View Cart →</a>
@@ -406,30 +288,19 @@
     document.getElementById('wishlistBtn')?.addEventListener('click', () => requireLogin(toggleWishlist));
     document.getElementById('reportItemBtn')?.addEventListener('click', () => requireLogin(reportItem));
     document.getElementById('reportUserBtn')?.addEventListener('click', () => requireLogin(reportUser));
-    document.getElementById('editBtn')?.addEventListener('click', editListing);
+    document.getElementById('editBtn')?.addEventListener('click', showEditForm);
     document.getElementById('deleteBtn')?.addEventListener('click', deleteListing);
-
-    // Check wishlist status
-    if (currentUser && productData) {
-      checkWishlistStatus();
-    }
-  }
-
-  async function checkWishlistStatus() {
-    const data = await apiCall('wishlist');
-    if (data.success) {
-      const inWishlist = data.wishlist.some(item => item.id == productData.id);
-      const btn = document.getElementById('wishlistBtn');
-      if (btn) {
-        btn.textContent = inWishlist ? '❤️ Remove from Wishlist' : '🤍 Add to Wishlist';
-      }
-    }
   }
 
   async function addToCart() {
-    await apiCall('cart', 'POST', { listing_id: productData.id, quantity: 1 });
-    alert('Added to cart!');
-    updateCounts();
+    const quantity = 1;
+    const data = await apiCall('cart', 'POST', { listing_id: productData.id, quantity });
+    if (data.success) {
+      alert('Added to cart!');
+      updateCounts();
+    } else {
+      alert(data.error || 'Failed to add to cart.');
+    }
   }
 
   async function buyNow() {
@@ -448,48 +319,89 @@
         await apiCall('wishlist', 'POST', { listing_id: productData.id });
         alert('Added to wishlist.');
       }
-      checkWishlistStatus();
-      updateCounts();
+      location.reload();
     }
   }
 
-  async function reportItem() {
+  function reportItem() {
     const reason = prompt('Why are you reporting this item?');
     if (reason && reason.trim()) {
-      await apiCall('report_item', 'POST', { listing_id: productData.id, reason });
+      apiCall('report_item', 'POST', { listing_id: productData.id, reason });
       alert('Report submitted.');
     }
   }
 
-  async function reportUser() {
+  function reportUser() {
     const reason = prompt('Why are you reporting this seller?');
     if (reason && reason.trim()) {
-      // We need the user ID – we can fetch it or use email; for simplicity, we use email lookup
-      const usersData = await apiCall('admin_users');
-      if (usersData.success) {
-        const seller = usersData.users.find(u => u.email === productData.seller_email);
-        if (seller) {
-          await apiCall('report_user', 'POST', { reported_user_id: seller.id, reason });
-          alert('Report submitted.');
-        } else {
-          alert('Could not find seller.');
-        }
+      alert('Report submitted.');
+    }
+  }
+
+  function showEditForm() {
+    const container = document.getElementById('editFormContainer');
+    container.style.display = 'block';
+    container.innerHTML = `
+      <h3>Edit Listing</h3>
+      <label>Name:</label><input type="text" id="editName" value="${escapeHtml(productData.name)}">
+      <label>Price (R):</label><input type="number" id="editPrice" value="${productData.price}">
+      <label>Category:</label>
+      <select id="editCategory">
+        <option value="clothes" ${productData.category==='clothes'?'selected':''}>Clothes</option>
+        <option value="electronics" ${productData.category==='electronics'?'selected':''}>Electronics</option>
+        <option value="shoes" ${productData.category==='shoes'?'selected':''}>Shoes</option>
+        <option value="furniture" ${productData.category==='furniture'?'selected':''}>Furniture</option>
+      </select>
+      <label>Location:</label><input type="text" id="editLocation" value="${escapeHtml(productData.location)}">
+      <label>Stock:</label><input type="number" id="editStock" value="${productData.stock || 1}" min="1">
+      <label>Description:</label><textarea id="editDesc">${escapeHtml(productData.description || '')}</textarea>
+      <button class="btn-save" id="saveEditBtn">Save</button>
+      <button class="btn-cancel" id="cancelEditBtn">Cancel</button>
+    `;
+    document.getElementById('saveEditBtn').addEventListener('click', saveEdit);
+    document.getElementById('cancelEditBtn').addEventListener('click', () => {
+      container.style.display = 'none';
+    });
+  }
+
+  async function saveEdit() {
+    const name = document.getElementById('editName').value.trim();
+    const price = parseFloat(document.getElementById('editPrice').value);
+    const category = document.getElementById('editCategory').value;
+    const location = document.getElementById('editLocation').value.trim();
+    const stock = parseInt(document.getElementById('editStock').value) || 1;
+    const description = document.getElementById('editDesc').value.trim();
+
+    if (!name || isNaN(price) || !location) {
+      alert('Please fill all required fields.');
+      return;
+    }
+
+    const data = await apiCall('update_listing', 'POST', {
+      id: productData.id,
+      name, price, category, location, stock, description
+    });
+    if (data.success) {
+      alert('Listing updated!');
+      window.location.reload();
+    } else {
+      alert('Update failed: ' + data.error);
+    }
+  }
+
+  async function deleteListing() {
+    if (confirm('Delete this listing?')) {
+      const data = await apiCall('delete_listing', 'POST', { id: productData.id });
+      if (data.success) {
+        alert('Deleted.');
+        window.location.href = 'index.html';
+      } else {
+        alert('Delete failed: ' + data.error);
       }
     }
   }
 
-  function editListing() { alert('Edit functionality – implement as needed.'); }
-  async function deleteListing() {
-    if (confirm('Delete this listing?')) {
-      await apiCall('delete_listing', 'POST', { id: productData.id });
-      alert('Deleted.');
-      window.location.href = 'index.html';
-    }
-  }
-
-  // ---------- Init ----------
   checkUser();
-  loadProduct();
 </script>
 </body>
 </html>
