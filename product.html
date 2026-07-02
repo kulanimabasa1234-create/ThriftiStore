@@ -6,46 +6,190 @@
   <title>Product | THRIFTI</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Roboto, sans-serif; background: #f8fafc; padding-top: 80px; padding-bottom: 40px; }
-    .navbar {
-      position: fixed; top: 0; left: 0; right: 0;
-      z-index: 1000; background: white; border-bottom: 1px solid #e2e8f0;
-      padding: 8px 20px; display: flex; align-items: center; justify-content: space-between;
-      flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    body {
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      background: #f8fafc;
+      padding-top: 80px;
+      padding-bottom: 40px;
     }
-    .logo { font-size: 1.6rem; font-weight: 700; background: linear-gradient(135deg, #0f3b2c, #1e6b4c); background-clip: text; -webkit-background-clip: text; color: transparent; cursor: pointer; text-decoration: none; white-space: nowrap; }
-    .logo small { font-size: 0.7rem; background: #e6f7ef; color: #1e6b4c; padding: 2px 8px; border-radius: 40px; margin-left: 6px; }
-    .nav-categories { display: flex; gap: 8px; flex-wrap: wrap; }
-    .nav-categories button { background: #f1f5f9; border: none; padding: 6px 14px; border-radius: 40px; font-weight: 600; font-size: 0.8rem; cursor: pointer; }
-    .search-box { flex: 1; min-width: 180px; max-width: 300px; }
-    .search-box input { width: 100%; padding: 6px 14px; border: 1px solid #cbd5e1; border-radius: 40px; font-size: 0.85rem; background: #f8fafc; }
-    .nav-actions { display: flex; align-items: center; gap: 10px; }
-    .nav-actions a, .nav-actions button { background: transparent; border: 1px solid #cbd5e1; padding: 6px 14px; border-radius: 40px; text-decoration: none; color: #1e293b; font-weight: 600; font-size: 0.8rem; cursor: pointer; }
+    /* Navbar (same as index) – omitted for brevity, but include full navbar styles from index.html */
+    .navbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      background: white;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 8px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .logo {
+      font-size: 1.6rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #0f3b2c, #1e6b4c);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .logo small {
+      font-size: 0.7rem;
+      background: #e6f7ef;
+      color: #1e6b4c;
+      padding: 2px 8px;
+      border-radius: 40px;
+      margin-left: 6px;
+    }
+    .nav-categories {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .nav-categories button {
+      background: #f1f5f9;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 40px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .nav-categories button.active {
+      background: #1e6b4c;
+      color: white;
+    }
+    .search-box {
+      flex: 1;
+      min-width: 180px;
+      max-width: 300px;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 6px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 40px;
+      font-size: 0.85rem;
+      background: #f8fafc;
+    }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .nav-actions a, .nav-actions button {
+      background: transparent;
+      border: 1px solid #cbd5e1;
+      padding: 6px 14px;
+      border-radius: 40px;
+      text-decoration: none;
+      color: #1e293b;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: 0.2s;
+      white-space: nowrap;
+    }
     .nav-actions a:hover, .nav-actions button:hover { background: #f1f5f9; }
-    .user-greeting { background: #1e6b4c; color: white; padding: 4px 12px; border-radius: 40px; display: flex; align-items: center; gap: 8px; font-size: 0.8rem; }
-    .user-greeting button { background: none; border: none; color: #ffd966; cursor: pointer; font-weight: 600; }
-    .dropdown { position: relative; display: inline-block; }
-    .dropdown button { background: transparent; border: none; font-size: 1.4rem; cursor: pointer; padding: 0 6px; }
-    .dropdown-content { display: none; position: absolute; right: 0; background: white; min-width: 180px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); border-radius: 16px; padding: 8px 0; z-index: 1001; border: 1px solid #e2e8f0; }
-    .dropdown-content a, .dropdown-content button { display: block; width: 100%; padding: 8px 20px; text-align: left; background: none; border: none; font-size: 0.85rem; color: #1e293b; cursor: pointer; text-decoration: none; }
+    .user-greeting {
+      background: #1e6b4c;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 40px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+    }
+    .user-greeting button {
+      background: none;
+      border: none;
+      color: #ffd966;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    .dropdown button {
+      background: transparent;
+      border: none;
+      font-size: 1.4rem;
+      cursor: pointer;
+      padding: 0 6px;
+    }
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      right: 0;
+      background: white;
+      min-width: 180px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+      border-radius: 16px;
+      padding: 8px 0;
+      z-index: 1001;
+      border: 1px solid #e2e8f0;
+    }
+    .dropdown-content a, .dropdown-content button {
+      display: block;
+      width: 100%;
+      padding: 8px 20px;
+      text-align: left;
+      background: none;
+      border: none;
+      font-size: 0.85rem;
+      color: #1e293b;
+      cursor: pointer;
+      text-decoration: none;
+    }
     .dropdown-content a:hover, .dropdown-content button:hover { background: #f1f5f9; }
     .dropdown.show .dropdown-content { display: block; }
-    .badge-cart, .badge-wishlist { background: #e67e22; color: white; border-radius: 50%; padding: 0 6px; font-size: 0.7rem; margin-left: 2px; }
+    .badge-cart, .badge-wishlist {
+      background: #e67e22;
+      color: white;
+      border-radius: 50%;
+      padding: 0 6px;
+      font-size: 0.7rem;
+      margin-left: 2px;
+    }
 
-    .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 32px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    .back-link { color: #1e6b4c; text-decoration: none; display: inline-block; margin-bottom: 16px; }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 32px;
+      padding: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .back-link {
+      color: #1e6b4c;
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 16px;
+    }
     .product-image { text-align: center; margin: 16px 0; }
     .product-image img { max-width: 100%; max-height: 300px; border-radius: 20px; }
     .price { font-size: 2rem; color: #e67e22; font-weight: 800; margin: 12px 0; }
     .info { background: #f1f5f9; padding: 16px; border-radius: 20px; margin: 16px 0; }
-    .stock-info { font-size: 0.9rem; color: #4b5563; margin-top: 8px; }
-    .stock-badge { display: inline-block; padding: 4px 12px; border-radius: 40px; font-weight: 600; }
-    .in-stock { background: #d1fae5; color: #065f46; }
-    .out-of-stock { background: #fee2e2; color: #b91c1c; }
     .btn-group { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
     .btn-group .btn {
-      flex: 1 0 auto; min-width: 120px; padding: 12px 16px; border-radius: 40px;
-      font-weight: bold; border: none; cursor: pointer; text-align: center; text-decoration: none; font-size: 0.9rem;
+      flex: 1 0 auto;
+      min-width: 120px;
+      padding: 12px 16px;
+      border-radius: 40px;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      font-size: 0.9rem;
     }
     .btn-primary { background: #1e6b4c; color: white; }
     .btn-primary:hover { background: #15593e; }
@@ -61,8 +205,6 @@
     .btn-edit:hover { background: #2563eb; }
     .btn-delete { background: #ef4444; color: white; }
     .btn-delete:hover { background: #dc2626; }
-    .edit-form { margin-top: 20px; background: #fef9e6; padding: 20px; border-radius: 20px; display: none; }
-    .edit-form input, .edit-form textarea, .edit-form select { width: 100%; padding: 8px; margin: 8px 0 16px; border: 1px solid #cbd5e1; border-radius: 40px; }
   </style>
 </head>
 <body>
@@ -101,8 +243,8 @@
   }
 
   let currentUser = null;
-  let productData = null;
 
+  // ---------- Navbar (same as index) ----------
   function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
@@ -117,7 +259,6 @@
     }
     updateNavbar();
     updateCounts();
-    loadProduct();
   }
 
   function updateNavbar() {
@@ -162,7 +303,6 @@
         <div class="dropdown" id="mainDropdown">
           <button class="dropbtn">⋮</button>
           <div class="dropdown-content">
-            <a href="login.html?admin=1">🔐 Admin Login</a>
             <a href="manual.html">📖 User Manual</a>
             <a href="contact.html">📧 Contact</a>
           </div>
@@ -202,13 +342,15 @@
   const urlParams = new URLSearchParams(window.location.search);
   const productId = urlParams.get('id');
 
+  let productData = null;
+
   async function loadProduct() {
     if (!productId) { document.getElementById('productDetail').innerHTML = '<p>Invalid product.</p>'; return; }
     const data = await apiCall('listings');
     if (data.success) {
       productData = data.listings.find(p => p.id == productId);
       if (!productData) {
-        document.getElementById('productDetail').innerHTML = '<p>Product not found (may be out of stock).</p>';
+        document.getElementById('productDetail').innerHTML = '<p>Product not found.</p>';
         return;
       }
       renderProduct();
@@ -218,45 +360,15 @@
   function renderProduct() {
     const p = productData;
     const isSeller = currentUser && currentUser.email === p.seller_email;
-
-    // Stock display
-    let stockHtml = '';
-    let stockText = '';
-    let stockBadgeClass = '';
-    if (p.stock === null) {
-      stockText = 'In stock';
-      stockBadgeClass = 'in-stock';
-    } else if (p.stock > 0) {
-      stockText = p.stock + ' available';
-      stockBadgeClass = 'in-stock';
-    } else {
-      stockText = 'Out of stock';
-      stockBadgeClass = 'out-of-stock';
-    }
-    stockHtml = `<div class="stock-info">📦 <span class="stock-badge ${stockBadgeClass}">${stockText}</span></div>`;
-
-    // Buttons - seller view vs buyer view
-    let buttonsHtml = '';
+    let buttons = '';
     if (isSeller) {
-      buttonsHtml = `
-        <div class="btn-group">
-          <button class="btn btn-edit" id="editBtn">✏️ Edit</button>
-          <button class="btn btn-delete" id="deleteBtn">🗑️ Delete</button>
-        </div>
-      `;
-    } else if (p.stock !== null && p.stock <= 0) {
-      buttonsHtml = `
-        <div class="btn-group">
-          <span style="padding:12px; background:#fee2e2; border-radius:40px; color:#b91c1c; font-weight:bold;">Out of stock</span>
-        </div>
-      `;
+      buttons = `<div class="btn-group"><button class="btn btn-edit" id="editBtn">✏️ Edit</button><button class="btn btn-delete" id="deleteBtn">🗑️ Delete</button></div>`;
     } else {
-      // Buyer view with stock > 0 or null
-      buttonsHtml = `
+      buttons = `
         <div class="btn-group">
           <button class="btn btn-primary" id="addToCartBtn">🛒 Add to Cart</button>
           <button class="btn btn-warning" id="buyNowBtn">⚡ Buy Now</button>
-          <a href="chat.html?otherEmail=${encodeURIComponent(p.seller_email)}&productName=${encodeURIComponent(p.name)}&productId=${p.id}" class="btn btn-chat" style="display:inline-block; text-align:center;">💬 Chat</a>
+          <a href="chat.html?sellerEmail=${encodeURIComponent(p.seller_email)}&productName=${encodeURIComponent(p.name)}&productId=${p.id}" class="btn btn-chat" style="display:inline-block; text-align:center;">💬 Chat</a>
           <button class="btn btn-wishlist" id="wishlistBtn">🤍 Add to Wishlist</button>
         </div>
         <div class="btn-group">
@@ -265,25 +377,18 @@
         </div>
       `;
     }
-
     document.getElementById('productDetail').innerHTML = `
-      <div class="product-image">
-        ${p.image ? `<img src="${p.image}" alt="${p.name}">` : `<div style="font-size:5rem;">${p.image_icon || '📦'}</div>`}
-      </div>
+      <div class="product-image">${p.image ? `<img src="${p.image}">` : `<div style="font-size:5rem;">${p.image_icon || '📦'}</div>`}</div>
       <h1>${escapeHtml(p.name)}</h1>
       <div class="price">R ${parseFloat(p.price).toLocaleString()}</div>
-      ${stockHtml}
       <div class="info">
         <p><strong>📍 Location:</strong> ${escapeHtml(p.location)}</p>
         <p><strong>👤 Seller:</strong> ${escapeHtml(p.seller_name || p.seller_email)}</p>
         <p><strong>📝 Description:</strong> ${escapeHtml(p.description || '')}</p>
       </div>
-      ${buttonsHtml}
-      <div id="editFormContainer" class="edit-form"></div>
-      <a href="cart.html" class="back-link" style="display:block; margin-top:20px;">View Cart →</a>
+      ${buttons}
+      <a href="cart.html" class="back-link">View Cart →</a>
     `;
-
-    // Attach events
     attachEvents();
   }
 
@@ -301,10 +406,11 @@
     document.getElementById('wishlistBtn')?.addEventListener('click', () => requireLogin(toggleWishlist));
     document.getElementById('reportItemBtn')?.addEventListener('click', () => requireLogin(reportItem));
     document.getElementById('reportUserBtn')?.addEventListener('click', () => requireLogin(reportUser));
-    document.getElementById('editBtn')?.addEventListener('click', showEditForm);
+    document.getElementById('editBtn')?.addEventListener('click', editListing);
     document.getElementById('deleteBtn')?.addEventListener('click', deleteListing);
 
-    if (currentUser && productData && !(currentUser.email === productData.seller_email)) {
+    // Check wishlist status
+    if (currentUser && productData) {
       checkWishlistStatus();
     }
   }
@@ -314,22 +420,22 @@
     if (data.success) {
       const inWishlist = data.wishlist.some(item => item.id == productData.id);
       const btn = document.getElementById('wishlistBtn');
-      if (btn) btn.textContent = inWishlist ? '❤️ Remove from Wishlist' : '🤍 Add to Wishlist';
+      if (btn) {
+        btn.textContent = inWishlist ? '❤️ Remove from Wishlist' : '🤍 Add to Wishlist';
+      }
     }
   }
 
-  // ---- Buyer actions ----
   async function addToCart() {
-    const data = await apiCall('cart', 'POST', { listing_id: productData.id, quantity: 1 });
-    if (data.success) {
-      alert('Added to cart!');
-      updateCounts();
-    } else {
-      alert('Failed: ' + data.error);
-    }
+    await apiCall('cart', 'POST', { listing_id: productData.id, quantity: 1 });
+    alert('Added to cart!');
+    updateCounts();
   }
 
-  async function buyNow() { await addToCart(); window.location.href = 'cart.html'; }
+  async function buyNow() {
+    await addToCart();
+    window.location.href = 'cart.html';
+  }
 
   async function toggleWishlist() {
     const data = await apiCall('wishlist');
@@ -358,84 +464,32 @@
   async function reportUser() {
     const reason = prompt('Why are you reporting this seller?');
     if (reason && reason.trim()) {
-      // For simplicity, we can store the report with the seller's email
-      // You may need to create a separate endpoint or handle it differently.
-      alert('Report submitted (seller report will be stored).');
+      // We need the user ID – we can fetch it or use email; for simplicity, we use email lookup
+      const usersData = await apiCall('admin_users');
+      if (usersData.success) {
+        const seller = usersData.users.find(u => u.email === productData.seller_email);
+        if (seller) {
+          await apiCall('report_user', 'POST', { reported_user_id: seller.id, reason });
+          alert('Report submitted.');
+        } else {
+          alert('Could not find seller.');
+        }
+      }
     }
   }
 
-  // ---- Seller actions ----
-  function showEditForm() {
-    const p = productData;
-    const container = document.getElementById('editFormContainer');
-    container.style.display = 'block';
-    container.innerHTML = `
-      <h3>Edit Listing</h3>
-      <label>Name:</label><input type="text" id="editName" value="${escapeHtml(p.name)}">
-      <label>Price (R):</label><input type="number" id="editPrice" value="${p.price}">
-      <label>Category:</label>
-      <select id="editCategory">
-        <option value="clothes" ${p.category==='clothes'?'selected':''}>Clothes</option>
-        <option value="electronics" ${p.category==='electronics'?'selected':''}>Electronics</option>
-        <option value="shoes" ${p.category==='shoes'?'selected':''}>Shoes</option>
-        <option value="furniture" ${p.category==='furniture'?'selected':''}>Furniture</option>
-      </select>
-      <label>Stock quantity:</label><input type="number" id="editStock" value="${p.stock !== null ? p.stock : 1}" min="1">
-      <label>Location:</label><input type="text" id="editLocation" value="${escapeHtml(p.location)}">
-      <label>Description:</label><textarea id="editDesc">${escapeHtml(p.description || '')}</textarea>
-      <button class="btn btn-edit" id="saveEditBtn" style="background:#1e6b4c;">Save</button>
-      <button class="btn btn-delete" id="cancelEditBtn" style="background:#9ca3af;">Cancel</button>
-    `;
-    document.getElementById('saveEditBtn').addEventListener('click', saveEdit);
-    document.getElementById('cancelEditBtn').addEventListener('click', () => {
-      container.style.display = 'none';
-    });
-  }
-
-  async function saveEdit() {
-    const newName = document.getElementById('editName').value.trim();
-    const newPrice = parseFloat(document.getElementById('editPrice').value);
-    const newCategory = document.getElementById('editCategory').value;
-    const newStock = parseInt(document.getElementById('editStock').value);
-    const newLocation = document.getElementById('editLocation').value.trim();
-    const newDesc = document.getElementById('editDesc').value.trim();
-    if (!newName || isNaN(newPrice) || newStock < 1) {
-      alert('Please fill all required fields.');
-      return;
-    }
-    const data = await apiCall('update_listing', 'POST', {
-      id: productData.id,
-      name: newName,
-      price: newPrice,
-      category: newCategory,
-      stock: newStock,
-      location: newLocation,
-      description: newDesc,
-      image_icon: productData.image_icon || '📦',
-      image: productData.image || null
-    });
-    if (data.success) {
-      alert('Listing updated!');
-      window.location.reload();
-    } else {
-      alert('Update failed: ' + data.error);
-    }
-  }
-
+  function editListing() { alert('Edit functionality – implement as needed.'); }
   async function deleteListing() {
     if (confirm('Delete this listing?')) {
-      const data = await apiCall('delete_listing', 'POST', { id: productData.id });
-      if (data.success) {
-        alert('Deleted.');
-        window.location.href = 'index.html';
-      } else {
-        alert('Delete failed: ' + data.error);
-      }
+      await apiCall('delete_listing', 'POST', { id: productData.id });
+      alert('Deleted.');
+      window.location.href = 'index.html';
     }
   }
 
   // ---------- Init ----------
   checkUser();
+  loadProduct();
 </script>
 </body>
 </html>
