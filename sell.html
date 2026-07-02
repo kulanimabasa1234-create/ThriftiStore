@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sell | THRIFTI</title>
   <style>
-    /* Same navbar styles as cart.html – include them */
+    /* same as before, add stock input */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', Roboto, sans-serif; background: #f8fafc; padding-top: 80px; padding-bottom: 40px; }
     .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: white; border-bottom: 1px solid #e2e8f0; padding: 8px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
@@ -40,6 +40,7 @@
   </style>
 </head>
 <body>
+<!-- Navbar (same) -->
 <nav class="navbar" id="mainNavbar">
   <a href="index.html" class="logo">THRIFTI <small>local · trusted</small></a>
   <div class="nav-categories">
@@ -137,6 +138,7 @@
         <div class="dropdown" id="mainDropdown">
           <button class="dropbtn">⋮</button>
           <div class="dropdown-content">
+            <a href="login.html?admin=1">🔐 Admin Login</a>
             <a href="manual.html">📖 User Manual</a>
             <a href="contact.html">📧 Contact</a>
           </div>
@@ -187,6 +189,7 @@
           </select>
         </div>
         <div class="input-group"><label>Price (R) *</label><input type="number" id="price" required></div>
+        <div class="input-group"><label>Stock (quantity available) *</label><input type="number" id="stock" value="1" min="1" required></div>
         <div class="input-group"><label>Description</label><textarea id="description" rows="3"></textarea></div>
         <div class="input-group"><label>Location (town/suburb) *</label><input type="text" id="location" required></div>
         <div class="input-group"><label>Image (optional)</label><input type="file" id="productImage" accept="image/*"><div id="imagePreview"><img id="previewImg" src="#"></div></div>
@@ -212,6 +215,7 @@
     const name = document.getElementById('itemName').value.trim();
     const category = document.getElementById('category').value;
     const price = parseFloat(document.getElementById('price').value);
+    const stock = parseInt(document.getElementById('stock').value) || 1;
     const description = document.getElementById('description').value.trim();
     const location = document.getElementById('location').value.trim();
     const imageFile = document.getElementById('productImage').files[0];
@@ -220,7 +224,7 @@
       return;
     }
     const formData = {
-      name, category, price, description, location,
+      name, category, price, stock, description, location,
       image_icon: '📦',
       seller_name: currentUser.name,
       seller_email: currentUser.email
