@@ -108,7 +108,7 @@
 <div class="card">
   <div class="brand-header">
     <h1>THRIFTI</h1>
-    <p>local · trusted · circular</p>
+    <p id="subtitle">local · trusted · circular</p>
   </div>
   <div class="tabs">
     <button class="tab-btn active" id="loginTab">Log in</button>
@@ -125,7 +125,7 @@
         <input type="password" id="loginPassword" placeholder="••••••••">
       </div>
       <button class="submit-btn" id="doLoginBtn">Log in to THRIFTI</button>
-      <div class="info-note"> Use any email to try Thrifti.</div>
+      <div class="info-note">Enter Credentials</div>
     </div>
     <div id="signupForm" class="form">
       <div class="input-group">
@@ -152,6 +152,11 @@
 </div>
 <script>
   const API_BASE = 'https://thriftistore-xh2m.onrender.com/api.php';
+  const urlParams = new URLSearchParams(window.location.search);
+
+  if (urlParams.get('admin') === '1') {
+    document.getElementById('subtitle').textContent = '🔐 Admin Login';
+  }
 
   async function apiCall(action, data) {
     const res = await fetch(`${API_BASE}?action=${action}`, {
@@ -183,7 +188,16 @@
     if (!email || !password) { alert('Please fill all fields.'); return; }
     const data = await apiCall('login', { email, password });
     if (data.success) {
-      window.location.href = 'index.html';
+      if (urlParams.get('admin') === '1') {
+        if (data.user.email === 'admin@thrifti.com') {
+          window.location.href = 'admin.html';
+        } else {
+          alert('You are not authorized as admin.');
+          window.location.href = 'index.html';
+        }
+      } else {
+        window.location.href = 'index.html';
+      }
     } else {
       alert(data.error || 'Login failed');
     }
