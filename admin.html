@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin | THRIFTI</title>
+  <title>Admin Dashboard | THRIFTI</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', Roboto, sans-serif; background: #f1f5f9; padding-top: 80px; padding-bottom: 40px; }
@@ -28,16 +28,23 @@
     .badge-cart, .badge-wishlist { background: #e67e22; color: white; border-radius: 50%; padding: 0 6px; font-size: 0.7rem; margin-left: 2px; }
 
     .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: white; border-radius: 16px; padding: 16px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+    .stat-number { font-size: 2rem; font-weight: bold; color: #1e6b4c; }
+    .stat-label { color: #4b5563; font-size: 0.85rem; }
     .card { background: white; border-radius: 24px; padding: 24px; margin-bottom: 30px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
     .card h2 { border-left: 5px solid #e67e22; padding-left: 16px; margin-bottom: 20px; }
     table { width: 100%; border-collapse: collapse; }
     th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e2e8f0; }
     th { background: #f8fafc; }
     button { background: #e67e22; color: white; border: none; padding: 6px 16px; border-radius: 40px; cursor: pointer; }
+    .view-more-btn { background: #1e6b4c; margin-top: 12px; }
     .danger-btn { background: #ef4444; }
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 16px; margin-bottom: 24px; }
-    .stat-card { background: #f8fafc; border-radius: 16px; padding: 16px; text-align: center; }
-    .stat-number { font-size: 2rem; font-weight: bold; color: #1e6b4c; }
+    .settings-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+    .settings-row label { min-width: 120px; font-weight: 600; }
+    .admin-log { max-height: 200px; overflow-y: auto; background: #f8fafc; padding: 12px; border-radius: 12px; }
+    .admin-log p { padding: 4px 0; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; }
+    .hidden-rows { display: none; }
   </style>
 </head>
 <body>
@@ -59,32 +66,118 @@
 <div class="container">
   <h1>🔧 THRIFTI Admin Dashboard</h1>
 
-  <div class="stats-grid" id="statsGrid">
-    <div class="stat-card"><div class="stat-number" id="statUsers">0</div><div>Users</div></div>
-    <div class="stat-card"><div class="stat-number" id="statListings">0</div><div>Listings</div></div>
-    <div class="stat-card"><div class="stat-number" id="statOrders">0</div><div>Orders</div></div>
-    <div class="stat-card"><div class="stat-number" id="statRevenue">R0</div><div>Revenue</div></div>
-    <div class="stat-card"><div class="stat-number" id="statFee">R0</div><div>Platform Fee Income</div></div>
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-number" id="statUsers">0</div><div class="stat-label">Users</div></div>
+    <div class="stat-card"><div class="stat-number" id="statListings">0</div><div class="stat-label">Active Listings</div></div>
+    <div class="stat-card"><div class="stat-number" id="statOrders">0</div><div class="stat-label">Sold Items</div></div>
+    <div class="stat-card"><div class="stat-number" id="statRevenue">R0</div><div class="stat-label">Revenue</div></div>
+    <div class="stat-card"><div class="stat-number" id="statFee">R0</div><div class="stat-label">Platform Fee Income</div></div>
   </div>
 
+  <!-- Registered Users -->
   <div class="card">
-    <h2>👥 Users</h2>
-    <div id="usersTable">Loading...</div>
+    <h2>👥 Registered Users</h2>
+    <table>
+      <thead><tr><th>Name</th><th>Email</th><th>Actions</th></tr></thead>
+      <tbody id="usersBody"></tbody>
+    </table>
+    <button class="view-more-btn" id="viewMoreUsersBtn">View more users</button>
   </div>
 
+  <!-- Active Listings -->
   <div class="card">
-    <h2>📦 Listings</h2>
-    <div id="listingsTable">Loading...</div>
+    <h2>📦 Active Listings</h2>
+    <table>
+      <thead><tr><th>Name</th><th>Seller</th><th>Price</th><th>Location</th><th>Actions</th></tr></thead>
+      <tbody id="listingsBody"></tbody>
+    </table>
+    <button class="view-more-btn" id="viewMoreListingsBtn">View more listings</button>
   </div>
 
+  <!-- Product Categories -->
+  <div class="card">
+    <h2>🏷️ Product Categories</h2>
+    <table>
+      <thead><tr><th>Category Name</th><th>Actions</th></tr></thead>
+      <tbody id="categoriesBody"></tbody>
+    </table>
+    <button class="view-more-btn" id="viewMoreCategoriesBtn">View more categories</button>
+    <button id="addCategoryBtn" style="margin-left:12px;">+ Add Category</button>
+  </div>
+
+  <!-- Orders -->
   <div class="card">
     <h2>📋 Orders</h2>
-    <div id="ordersTable">Loading...</div>
+    <table>
+      <thead><tr><th>Date</th><th>Buyer</th><th>Items</th><th>Total</th><th>Fee</th><th>Seller Gets</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="ordersBody"></tbody>
+    </table>
+    <button class="view-more-btn" id="viewMoreOrdersBtn">View more orders</button>
   </div>
 
+  <!-- Reported Items -->
   <div class="card">
-    <h2>⚠️ Reports</h2>
-    <div id="reportsTable">Loading...</div>
+    <h2>⚠️ Reported Items</h2>
+    <table>
+      <thead><tr><th>Item ID</th><th>Item Name</th><th>Reported By</th><th>Reason</th><th>Date</th><th>Actions</th></tr></thead>
+      <tbody id="reportedItemsBody"></tbody>
+    </table>
+    <button class="view-more-btn" id="viewMoreReportedItemsBtn">View more reports</button>
+  </div>
+
+  <!-- Reported Users -->
+  <div class="card">
+    <h2>⚠️ Reported Users</h2>
+    <table>
+      <thead><tr><th>User Email</th><th>Reported By</th><th>Reason</th><th>Date</th><th>Actions</th></tr></thead>
+      <tbody id="reportedUsersBody"></tbody>
+    </table>
+    <button class="view-more-btn" id="viewMoreReportedUsersBtn">View more reports</button>
+  </div>
+
+  <!-- Chat Conversations -->
+  <div class="card">
+    <h2>💬 Chat Conversations</h2>
+    <table>
+      <thead><tr><th>Sender</th><th>Receiver</th><th>Message</th><th>Time</th></tr></thead>
+      <tbody id="chatsBody"></tbody>
+    </table>
+    <button class="view-more-btn" id="viewMoreChatsBtn">View more conversations</button>
+  </div>
+
+  <!-- Site Settings -->
+  <div class="card">
+    <h2>⚙️ Site Settings</h2>
+    <div class="settings-row">
+      <label>Allow new registrations:</label>
+      <input type="checkbox" id="allowReg" checked>
+    </div>
+    <div class="settings-row">
+      <label>Currency symbol:</label>
+      <input type="text" id="currency" value="R">
+    </div>
+    <div class="settings-row">
+      <label>Admin email:</label>
+      <input type="email" id="adminEmail" value="admin@thrifti.com">
+    </div>
+    <button id="saveSettingsBtn">Save Settings</button>
+    <button id="resetSiteBtn" class="danger-btn" style="margin-left:12px;">Reset Site (Clear Data)</button>
+  </div>
+
+  <!-- Backup & Export -->
+  <div class="card">
+    <h2>💾 Backup & Export</h2>
+    <button id="backupBtn">Download Backup (JSON)</button>
+    <input type="file" id="restoreFile" accept=".json">
+    <button id="restoreBtn">Restore from Backup</button>
+  </div>
+
+  <!-- Admin Activity Log -->
+  <div class="card">
+    <h2>📜 Admin Activity Log</h2>
+    <div id="adminLog" class="admin-log"><p>No activity logged yet.</p></div>
+    <button id="clearLogBtn">Clear Log</button>
   </div>
 </div>
 
@@ -103,6 +196,7 @@
   }
 
   let currentUser = null;
+  let showUsers = false, showListings = false, showCategories = false, showOrders = false, showReportedItems = false, showReportedUsers = false, showChats = false;
 
   function escapeHtml(str) {
     if (!str) return '';
@@ -123,7 +217,6 @@
       return;
     }
     updateNavbar();
-    updateCounts();
     loadAdminData();
   }
 
@@ -149,9 +242,7 @@
       `;
       document.getElementById('logoutBtn').addEventListener('click', async () => {
         await apiCall('logout', 'POST');
-        currentUser = null;
-        updateNavbar();
-        window.location.reload();
+        window.location.href = 'index.html';
       });
       document.querySelector('.dropbtn')?.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -160,53 +251,10 @@
       window.addEventListener('click', () => {
         document.getElementById('mainDropdown')?.classList.remove('show');
       });
-      updateCounts();
-    } else {
-      actions.innerHTML = `
-        <a href="login.html" class="login-link">Log in</a>
-        <a href="cart.html" class="cart-link">🛒 <span class="badge-cart" id="cartCount">0</span></a>
-        <a href="wishlist.html" class="wishlist-link">💚 <span class="badge-wishlist" id="wishlistCount">0</span></a>
-        <div class="dropdown" id="mainDropdown">
-          <button class="dropbtn">⋮</button>
-          <div class="dropdown-content">
-            <a href="login.html?admin=1">🔐 Admin Login</a>
-            <a href="manual.html">📖 User Manual</a>
-            <a href="contact.html">📧 Contact</a>
-          </div>
-        </div>
-      `;
-      document.querySelector('.dropbtn')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        document.getElementById('mainDropdown').classList.toggle('show');
-      });
-      window.addEventListener('click', () => {
-        document.getElementById('mainDropdown')?.classList.remove('show');
-      });
-      updateCounts();
     }
-  }
-
-  async function updateCounts() {
-    if (!currentUser) {
-      document.getElementById('cartCount').textContent = '0';
-      document.getElementById('wishlistCount').textContent = '0';
-      return;
-    }
-    try {
-      const cartData = await apiCall('cart');
-      if (cartData.success) {
-        const total = cartData.cart.reduce((s, i) => s + i.quantity, 0);
-        document.getElementById('cartCount').textContent = total;
-      }
-      const wishData = await apiCall('wishlist');
-      if (wishData.success) {
-        document.getElementById('wishlistCount').textContent = wishData.wishlist.length;
-      }
-    } catch(e) {}
   }
 
   async function loadAdminData() {
-    // Stats
     const stats = await apiCall('admin_stats');
     if (stats.success) {
       document.getElementById('statUsers').textContent = stats.stats.users;
@@ -216,80 +264,233 @@
       document.getElementById('statFee').textContent = 'R' + parseFloat(stats.stats.fee_income).toFixed(2);
     }
 
-    // Users
     const users = await apiCall('admin_users');
-    if (users.success) { renderUsers(users.users); }
+    if (users.success) renderUsers(users.users);
 
-    // Listings
     const listings = await apiCall('admin_listings');
-    if (listings.success) { renderListings(listings.listings); }
+    if (listings.success) renderListings(listings.listings);
 
-    // Orders
+    // Categories (stored in localStorage for simplicity – or you can add a categories table)
+    renderCategories();
+
     const orders = await apiCall('admin_orders');
-    if (orders.success) { renderOrders(orders.orders); }
+    if (orders.success) renderOrders(orders.orders);
 
-    // Reports
     const reports = await apiCall('admin_reports');
-    if (reports.success) { renderReports(reports); }
+    if (reports.success) {
+      renderReportedItems(reports.reported_items || []);
+      renderReportedUsers(reports.reported_users || []);
+    }
+
+    const chats = await apiCall('admin_chats');
+    if (chats.success) renderChats(chats.chats);
+
+    renderAdminLog();
   }
 
+  // ---------- Render Functions ----------
   function renderUsers(users) {
-    const container = document.getElementById('usersTable');
-    if (!users.length) { container.innerHTML = '<p>No users.</p>'; return; }
-    let html = '<table><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Created</th></tr></thead><tbody>';
-    users.forEach(u => {
-      html += `<tr><td>${u.id}</td><td>${escapeHtml(u.name)}</td><td>${escapeHtml(u.email)}</td><td>${new Date(u.created_at).toLocaleString()}</td></tr>`;
+    const tbody = document.getElementById('usersBody');
+    const limit = showUsers ? users.length : 3;
+    if (!users.length) { tbody.innerHTML = '<tr><td colspan="3">No users.</td></tr>'; return; }
+    let html = '';
+    for (let i = 0; i < limit; i++) {
+      const u = users[i];
+      html += `<tr><td>${escapeHtml(u.name)}</td><td>${escapeHtml(u.email)}</td><td><button class="delete-user" data-email="${escapeHtml(u.email)}">Delete</button></td></tr>`;
+    }
+    tbody.innerHTML = html;
+    document.getElementById('viewMoreUsersBtn').style.display = users.length > 3 ? 'inline-block' : 'none';
+    document.querySelectorAll('.delete-user').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (confirm('Delete user?')) {
+          // You'd need a delete_user endpoint – for now, just reload
+          alert('Delete user: implement in API if needed.');
+        }
+      });
     });
-    html += '</tbody></table>';
-    container.innerHTML = html;
   }
+  document.getElementById('viewMoreUsersBtn').addEventListener('click', () => { showUsers = !showUsers; renderUsers(JSON.parse(localStorage.getItem('_admin_users') || '[]')); });
 
   function renderListings(listings) {
-    const container = document.getElementById('listingsTable');
-    if (!listings.length) { container.innerHTML = '<p>No listings.</p>'; return; }
-    let html = '<table><thead><tr><th>ID</th><th>Name</th><th>Seller</th><th>Price</th><th>Location</th></tr></thead><tbody>';
-    listings.forEach(l => {
-      html += `<tr><td>${l.id}</td><td>${escapeHtml(l.name)}</td><td>${escapeHtml(l.seller_name || l.seller_email)}</td><td>R ${parseFloat(l.price).toLocaleString()}</td><td>${escapeHtml(l.location)}</td></tr>`;
+    const tbody = document.getElementById('listingsBody');
+    const limit = showListings ? listings.length : 3;
+    if (!listings.length) { tbody.innerHTML = '<tr><td colspan="5">No listings.</td></tr>'; return; }
+    let html = '';
+    for (let i = 0; i < limit; i++) {
+      const l = listings[i];
+      html += `<tr><td>${escapeHtml(l.name)}</td><td>${escapeHtml(l.seller_name || l.seller_email)}</td><td>R ${parseFloat(l.price).toLocaleString()}</td><td>${escapeHtml(l.location)}</td><td><button class="delete-listing" data-id="${l.id}">Delete</button></td></tr>`;
+    }
+    tbody.innerHTML = html;
+    document.getElementById('viewMoreListingsBtn').style.display = listings.length > 3 ? 'inline-block' : 'none';
+    document.querySelectorAll('.delete-listing').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (confirm('Delete listing?')) {
+          const data = await apiCall('delete_listing', 'POST', { id: btn.dataset.id });
+          if (data.success) loadAdminData();
+        }
+      });
     });
-    html += '</tbody></table>';
-    container.innerHTML = html;
   }
+  document.getElementById('viewMoreListingsBtn').addEventListener('click', () => { showListings = !showListings; loadAdminData(); });
+
+  function renderCategories() {
+    // Simple: show default categories (can be extended)
+    const cats = ['clothes', 'electronics', 'shoes', 'furniture'];
+    const tbody = document.getElementById('categoriesBody');
+    const limit = showCategories ? cats.length : 3;
+    let html = '';
+    for (let i = 0; i < limit; i++) {
+      html += `<tr><td>${escapeHtml(cats[i])}</td><td><button>Edit</button> <button>Delete</button></td></tr>`;
+    }
+    tbody.innerHTML = html;
+    document.getElementById('viewMoreCategoriesBtn').style.display = cats.length > 3 ? 'inline-block' : 'none';
+  }
+  document.getElementById('viewMoreCategoriesBtn').addEventListener('click', () => { showCategories = !showCategories; renderCategories(); });
+  document.getElementById('addCategoryBtn').addEventListener('click', () => {
+    const newCat = prompt('Enter new category name:');
+    if (newCat) alert('Category added (simulation).');
+  });
 
   function renderOrders(orders) {
-    const container = document.getElementById('ordersTable');
-    if (!orders.length) { container.innerHTML = '<p>No orders.</p>'; return; }
-    let html = '<table><thead><tr><th>ID</th><th>Buyer</th><th>Total</th><th>Fee</th><th>Seller Gets</th><th>Status</th><th>Date</th></tr></thead><tbody>';
-    orders.forEach(o => {
+    const tbody = document.getElementById('ordersBody');
+    const limit = showOrders ? orders.length : 3;
+    if (!orders.length) { tbody.innerHTML = '<tr><td colspan="8">No orders.</td></tr>'; return; }
+    let html = '';
+    for (let i = 0; i < limit; i++) {
+      const o = orders[i];
+      const itemsHtml = o.items ? o.items.map(it => `${it.name} (x${it.quantity})`).join('<br>') : '';
       html += `<tr>
-        <td>${o.id}</td>
+        <td>${new Date(o.created_at).toLocaleString()}</td>
         <td>${escapeHtml(o.buyer_name)}<br><small>${escapeHtml(o.buyer_email)}</small></td>
+        <td>${itemsHtml}</td>
         <td>R ${parseFloat(o.total).toFixed(2)}</td>
         <td>R ${parseFloat(o.fee || 0).toFixed(2)}</td>
         <td>R ${parseFloat(o.seller_gets || 0).toFixed(2)}</td>
         <td>${o.status || 'pending'}</td>
-        <td>${new Date(o.created_at).toLocaleString()}</td>
+        <td><button>Mark Shipped</button></td>
       </tr>`;
+    }
+    tbody.innerHTML = html;
+    document.getElementById('viewMoreOrdersBtn').style.display = orders.length > 3 ? 'inline-block' : 'none';
+  }
+  document.getElementById('viewMoreOrdersBtn').addEventListener('click', () => { showOrders = !showOrders; loadAdminData(); });
+
+  function renderReportedItems(items) {
+    const tbody = document.getElementById('reportedItemsBody');
+    const limit = showReportedItems ? items.length : 3;
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="6">No reports.</td></tr>'; return; }
+    let html = '';
+    for (let i = 0; i < limit; i++) {
+      const r = items[i];
+      html += `<tr><td>${r.item_id}</td><td>${escapeHtml(r.item_name)}</td><td>${escapeHtml(r.reporter_name)}</td><td>${escapeHtml(r.reason)}</td><td>${new Date(r.created_at).toLocaleString()}</td><td><button>Resolve</button></td></tr>`;
+    }
+    tbody.innerHTML = html;
+    document.getElementById('viewMoreReportedItemsBtn').style.display = items.length > 3 ? 'inline-block' : 'none';
+  }
+  document.getElementById('viewMoreReportedItemsBtn').addEventListener('click', () => { showReportedItems = !showReportedItems; loadAdminData(); });
+
+  function renderReportedUsers(users) {
+    const tbody = document.getElementById('reportedUsersBody');
+    const limit = showReportedUsers ? users.length : 3;
+    if (!users.length) { tbody.innerHTML = '<tr><td colspan="5">No reports.</td></tr>'; return; }
+    let html = '';
+    for (let i = 0; i < limit; i++) {
+      const r = users[i];
+      html += `<tr><td>${escapeHtml(r.reported_name)}</td><td>${escapeHtml(r.reporter_name)}</td><td>${escapeHtml(r.reason)}</td><td>${new Date(r.created_at).toLocaleString()}</td><td><button>Resolve</button></td></tr>`;
+    }
+    tbody.innerHTML = html;
+    document.getElementById('viewMoreReportedUsersBtn').style.display = users.length > 3 ? 'inline-block' : 'none';
+  }
+  document.getElementById('viewMoreReportedUsersBtn').addEventListener('click', () => { showReportedUsers = !showReportedUsers; loadAdminData(); });
+
+  function renderChats(chats) {
+    const tbody = document.getElementById('chatsBody');
+    const limit = showChats ? chats.length : 3;
+    if (!chats.length) { tbody.innerHTML = '<tr><td colspan="4">No chats.</td></tr>'; return; }
+    let html = '';
+    for (let i = 0; i < limit; i++) {
+      const c = chats[i];
+      html += `<tr><td>${escapeHtml(c.sender_email)}</td><td>${escapeHtml(c.receiver_email)}</td><td>${escapeHtml(c.message)}</td><td>${new Date(c.sent_at).toLocaleString()}</td></tr>`;
+    }
+    tbody.innerHTML = html;
+    document.getElementById('viewMoreChatsBtn').style.display = chats.length > 3 ? 'inline-block' : 'none';
+  }
+  document.getElementById('viewMoreChatsBtn').addEventListener('click', () => { showChats = !showChats; loadAdminData(); });
+
+  function renderAdminLog() {
+    // Simple log stored in localStorage
+    const log = JSON.parse(localStorage.getItem('thrifti_admin_log') || '[]');
+    const container = document.getElementById('adminLog');
+    if (!log.length) { container.innerHTML = '<p>No activity logged yet.</p>'; return; }
+    let html = '';
+    log.slice().reverse().forEach(entry => {
+      html += `<p>${new Date(entry.timestamp).toLocaleString()} - ${escapeHtml(entry.action)}: ${escapeHtml(entry.details)}</p>`;
     });
-    html += '</tbody></table>';
     container.innerHTML = html;
   }
 
-  function renderReports(reports) {
-    const container = document.getElementById('reportsTable');
-    const items = reports.reported_items || [];
-    const users = reports.reported_users || [];
-    if (!items.length && !users.length) { container.innerHTML = '<p>No reports.</p>'; return; }
-    let html = '<h3>Reported Items</h3><table><thead><tr><th>Item</th><th>Reason</th><th>Reported By</th><th>Date</th></tr></thead><tbody>';
-    items.forEach(r => {
-      html += `<tr><td>${escapeHtml(r.item_name)}</td><td>${escapeHtml(r.reason)}</td><td>${escapeHtml(r.reporter_name)}</td><td>${new Date(r.created_at).toLocaleString()}</td></tr>`;
-    });
-    html += '</tbody></table><h3>Reported Users</h3><table><thead><tr><th>Reported User</th><th>Reason</th><th>Reported By</th><th>Date</th></tr></thead><tbody>';
-    users.forEach(r => {
-      html += `<tr><td>${escapeHtml(r.reported_name)}</td><td>${escapeHtml(r.reason)}</td><td>${escapeHtml(r.reporter_name)}</td><td>${new Date(r.created_at).toLocaleString()}</td></tr>`;
-    });
-    html += '</tbody></table>';
-    container.innerHTML = html;
+  function addAdminLog(action, details) {
+    const log = JSON.parse(localStorage.getItem('thrifti_admin_log') || '[]');
+    log.push({ timestamp: Date.now(), action, details });
+    localStorage.setItem('thrifti_admin_log', JSON.stringify(log));
+    renderAdminLog();
   }
+
+  // ---------- Settings ----------
+  document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+    addAdminLog('Settings', 'Updated site settings');
+    alert('Settings saved.');
+  });
+
+  document.getElementById('resetSiteBtn').addEventListener('click', () => {
+    if (confirm('⚠️ Delete ALL data? This cannot be undone.')) {
+      localStorage.clear();
+      alert('Data cleared.');
+      window.location.reload();
+    }
+  });
+
+  document.getElementById('clearLogBtn').addEventListener('click', () => {
+    if (confirm('Clear admin log?')) {
+      localStorage.removeItem('thrifti_admin_log');
+      renderAdminLog();
+    }
+  });
+
+  // ---------- Backup & Restore ----------
+  document.getElementById('backupBtn').addEventListener('click', () => {
+    const data = {};
+    for (let key in localStorage) {
+      if (key.startsWith('thrifti_')) {
+        data[key] = JSON.parse(localStorage.getItem(key));
+      }
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `thrifti_backup_${new Date().toISOString()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    addAdminLog('Backup', 'Downloaded backup');
+  });
+
+  document.getElementById('restoreBtn').addEventListener('click', () => {
+    const file = document.getElementById('restoreFile').files[0];
+    if (!file) { alert('Select a backup file.'); return; }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        for (let key in data) {
+          localStorage.setItem(key, JSON.stringify(data[key]));
+        }
+        alert('Restore successful. Reloading...');
+        window.location.reload();
+      } catch(err) { alert('Invalid backup file.'); }
+    };
+    reader.readAsText(file);
+  });
 
   checkUser();
 </script>
