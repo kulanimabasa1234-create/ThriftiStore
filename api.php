@@ -4,7 +4,6 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
 header('Access-Control-Allow-Headers: Content-Type');
 
-// Database credentials (from environment variables)
 $host = getenv('DB_HOST') ?: 'localhost';
 $dbname = getenv('DB_NAME') ?: 'thrifti_db';
 $user = getenv('DB_USER') ?: 'thrifti_user';
@@ -178,7 +177,7 @@ switch ($action) {
             break;
         }
         $user_id = $_SESSION['user_id'];
-        $stmt = $pdo->prepare("SELECT c.listing_id, c.quantity, l.price FROM carts c JOIN listings l ON c.listing_id = l.id WHERE c.user_id = ?");
+        $stmt = $pdo->prepare("SELECT c.listing_id, c.quantity, l.price, l.seller_email FROM carts c JOIN listings l ON c.listing_id = l.id WHERE c.user_id = ?");
         $stmt->execute([$user_id]);
         $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
         if (empty($items)) {
@@ -187,10 +186,13 @@ switch ($action) {
         }
         $total = 0;
         foreach ($items as $item) $total += $item['price'] * $item['quantity'];
+        $fee = round($total * 0.15, 2);
+        $seller_gets = round($total - $fee, 2);
+
         $pdo->beginTransaction();
         try {
-            $stmt = $pdo->prepare("INSERT INTO orders (user_id, total) VALUES (?, ?)");
-            $stmt->execute([$user_id, $total]);
+            $stmt = $pdo->prepare("INSERT INTO orders (user_id, total, fee, seller_gets) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$user_id, $total, $fee, $seller_gets]);
             $order_id = $pdo->lastInsertId();
             foreach ($items as $item) {
                 $stmt = $pdo->prepare("INSERT INTO order_items (order_id, listing_id, quantity, price) VALUES (?, ?, ?, ?)");
@@ -199,7 +201,7 @@ switch ($action) {
             $stmt = $pdo->prepare("DELETE FROM carts WHERE user_id = ?");
             $stmt->execute([$user_id]);
             $pdo->commit();
-            echo json_encode(['success' => true, 'order_id' => $order_id, 'total' => $total]);
+            echo json_encode(['success' => true, 'order_id' => $order_id, 'total' => $total, 'fee' => $fee, 'seller_gets' => $seller_gets]);
         } catch (Exception $e) {
             $pdo->rollBack();
             echo json_encode(['success' => false, 'error' => $e->getMessage()]);
@@ -233,17 +235,17 @@ switch ($action) {
         echo json_encode(['success' => true]);
         break;
 
-    // ---------- CHAT ----------
+    // ---------- CHAT (fixed) ----------
     case 'send_message':
         if (!isset($_SESSION['user_id'])) {
             echo json_encode(['success' => false, 'error' => 'Not logged in']);
             break;
         }
-        $receiver_id = $_POST['receiver_id'];
+        $receiver_email = $_POST['receiver_email'];
         $message = $_POST['message'];
-        $sender_id = $_SESSION['user_id'];
-        $stmt = $pdo->prepare("INSERT INTO chats (sender_id, receiver_id, message) VALUES (?, ?, ?)");
-        $stmt->execute([$sender_id, $receiver_id, $message]);
+        $sender_email = $_SESSION['user_email'];
+        $stmt = $pdo->prepare("INSERT INTO chats (sender_email, receiver_email, message) VALUES (?, ?, ?)");
+        $stmt->execute([$sender_email, $receiver_email, $message]);
         echo json_encode(['success' => true]);
         break;
 
@@ -252,12 +254,38 @@ switch ($action) {
             echo json_encode(['success' => false, 'error' => 'Not logged in']);
             break;
         }
-        $other_user = $_GET['other_user'];
-        $my_id = $_SESSION['user_id'];
-        $stmt = $pdo->prepare("SELECT * FROM chats WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?) ORDER BY sent_at ASC");
-        $stmt->execute([$my_id, $other_user, $other_user, $my_id]);
+        $other_email = $_GET['other_email'];
+        $my_email = $_SESSION['user_email'];
+        $stmt = $pdo->prepare("SELECT * FROM chats WHERE (sender_email = ? AND receiver_email = ?) OR (sender_email = ? AND receiver_email = ?) ORDER BY sent_at ASC");
+        $stmt->execute([$my_email, $other_email, $other_email, $my_email]);
         $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['success' => true, 'messages' => $messages]);
+        break;
+
+    case 'list_chats':
+        if (!isset($_SESSION['user_id'])) {
+            echo json_encode(['success' => false, 'error' => 'Not logged in']);
+            break;
+        }
+        $my_email = $_SESSION['user_email'];
+        $stmt = $pdo->prepare("SELECT DISTINCT 
+            CASE WHEN sender_email = ? THEN receiver_email ELSE sender_email END AS other_email,
+            MAX(sent_at) as last_time
+            FROM chats 
+            WHERE sender_email = ? OR receiver_email = ?
+            GROUP BY other_email
+            ORDER BY last_time DESC");
+        $stmt->execute([$my_email, $my_email, $my_email]);
+        $chats = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // get last message for each
+        foreach ($chats as &$chat) {
+            $stmt = $pdo->prepare("SELECT message, sent_at FROM chats WHERE (sender_email = ? AND receiver_email = ?) OR (sender_email = ? AND receiver_email = ?) ORDER BY sent_at DESC LIMIT 1");
+            $stmt->execute([$my_email, $chat['other_email'], $chat['other_email'], $my_email]);
+            $last = $stmt->fetch(PDO::FETCH_ASSOC);
+            $chat['last_message'] = $last['message'] ?? '';
+            $chat['last_time'] = $last['sent_at'] ?? $chat['last_time'];
+        }
+        echo json_encode(['success' => true, 'chats' => $chats]);
         break;
 
     // ---------- ADMIN ----------
@@ -279,6 +307,22 @@ switch ($action) {
         echo json_encode(['success' => true, 'listings' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
         break;
 
+    case 'admin_orders':
+        if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            break;
+        }
+        $stmt = $pdo->query("SELECT o.*, u.name as buyer_name, u.email as buyer_email FROM orders o JOIN users u ON o.user_id = u.id ORDER BY o.id DESC");
+        $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // get order items
+        foreach ($orders as &$order) {
+            $stmt = $pdo->prepare("SELECT oi.*, l.name FROM order_items oi JOIN listings l ON oi.listing_id = l.id WHERE oi.order_id = ?");
+            $stmt->execute([$order['id']]);
+            $order['items'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+        echo json_encode(['success' => true, 'orders' => $orders]);
+        break;
+
     case 'admin_reports':
         if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
             echo json_encode(['success' => false, 'error' => 'Unauthorized']);
@@ -287,6 +331,25 @@ switch ($action) {
         $items = $pdo->query("SELECT r.*, l.name as item_name, u.name as reporter_name FROM reported_items r JOIN listings l ON r.listing_id = l.id JOIN users u ON r.reported_by = u.id ORDER BY r.id DESC")->fetchAll(PDO::FETCH_ASSOC);
         $users = $pdo->query("SELECT r.*, u.name as reporter_name, ru.name as reported_name FROM reported_users r JOIN users u ON r.reported_by = u.id JOIN users ru ON r.reported_user_id = ru.id ORDER BY r.id DESC")->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['success' => true, 'reported_items' => $items, 'reported_users' => $users]);
+        break;
+
+    case 'admin_stats':
+        if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            break;
+        }
+        $users_count = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
+        $listings_count = $pdo->query("SELECT COUNT(*) FROM listings")->fetchColumn();
+        $orders_count = $pdo->query("SELECT COUNT(*) FROM orders")->fetchColumn();
+        $total_revenue = $pdo->query("SELECT COALESCE(SUM(total), 0) FROM orders")->fetchColumn();
+        $total_fee = $pdo->query("SELECT COALESCE(SUM(fee), 0) FROM orders")->fetchColumn();
+        echo json_encode(['success' => true, 'stats' => [
+            'users' => $users_count,
+            'listings' => $listings_count,
+            'orders' => $orders_count,
+            'revenue' => $total_revenue,
+            'fee_income' => $total_fee
+        ]]);
         break;
 
     default:
