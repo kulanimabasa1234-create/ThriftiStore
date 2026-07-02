@@ -5,10 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Product | THRIFTI</title>
   <style>
-    /* Same navbar styles as before */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', Roboto, sans-serif; background: #f8fafc; padding-top: 80px; padding-bottom: 40px; }
-    .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: white; border-bottom: 1px solid #e2e8f0; padding: 8px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 1000; background: white; border-bottom: 1px solid #e2e8f0;
+      padding: 8px 20px; display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
     .logo { font-size: 1.6rem; font-weight: 700; background: linear-gradient(135deg, #0f3b2c, #1e6b4c); background-clip: text; -webkit-background-clip: text; color: transparent; cursor: pointer; text-decoration: none; white-space: nowrap; }
     .logo small { font-size: 0.7rem; background: #e6f7ef; color: #1e6b4c; padding: 2px 8px; border-radius: 40px; margin-left: 6px; }
     .nav-categories { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -35,18 +39,13 @@
     .price { font-size: 2rem; color: #e67e22; font-weight: 800; margin: 12px 0; }
     .info { background: #f1f5f9; padding: 16px; border-radius: 20px; margin: 16px 0; }
     .stock-info { font-size: 0.9rem; color: #4b5563; margin-top: 8px; }
+    .stock-badge { display: inline-block; padding: 4px 12px; border-radius: 40px; font-weight: 600; }
+    .in-stock { background: #d1fae5; color: #065f46; }
+    .out-of-stock { background: #fee2e2; color: #b91c1c; }
     .btn-group { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
     .btn-group .btn {
-      flex: 1 0 auto;
-      min-width: 120px;
-      padding: 12px 16px;
-      border-radius: 40px;
-      font-weight: bold;
-      border: none;
-      cursor: pointer;
-      text-align: center;
-      text-decoration: none;
-      font-size: 0.9rem;
+      flex: 1 0 auto; min-width: 120px; padding: 12px 16px; border-radius: 40px;
+      font-weight: bold; border: none; cursor: pointer; text-align: center; text-decoration: none; font-size: 0.9rem;
     }
     .btn-primary { background: #1e6b4c; color: white; }
     .btn-primary:hover { background: #15593e; }
@@ -219,12 +218,41 @@
   function renderProduct() {
     const p = productData;
     const isSeller = currentUser && currentUser.email === p.seller_email;
-    const stockText = p.stock > 0 ? `${p.stock} available` : 'Out of stock';
-    let buttons = '';
-    if (isSeller) {
-      buttons = `<div class="btn-group"><button class="btn btn-edit" id="editBtn">✏️ Edit</button><button class="btn btn-delete" id="deleteBtn">🗑️ Delete</button></div>`;
+
+    // Stock display
+    let stockHtml = '';
+    let stockText = '';
+    let stockBadgeClass = '';
+    if (p.stock === null) {
+      stockText = 'In stock';
+      stockBadgeClass = 'in-stock';
     } else if (p.stock > 0) {
-      buttons = `
+      stockText = p.stock + ' available';
+      stockBadgeClass = 'in-stock';
+    } else {
+      stockText = 'Out of stock';
+      stockBadgeClass = 'out-of-stock';
+    }
+    stockHtml = `<div class="stock-info">📦 <span class="stock-badge ${stockBadgeClass}">${stockText}</span></div>`;
+
+    // Buttons - seller view vs buyer view
+    let buttonsHtml = '';
+    if (isSeller) {
+      buttonsHtml = `
+        <div class="btn-group">
+          <button class="btn btn-edit" id="editBtn">✏️ Edit</button>
+          <button class="btn btn-delete" id="deleteBtn">🗑️ Delete</button>
+        </div>
+      `;
+    } else if (p.stock !== null && p.stock <= 0) {
+      buttonsHtml = `
+        <div class="btn-group">
+          <span style="padding:12px; background:#fee2e2; border-radius:40px; color:#b91c1c; font-weight:bold;">Out of stock</span>
+        </div>
+      `;
+    } else {
+      // Buyer view with stock > 0 or null
+      buttonsHtml = `
         <div class="btn-group">
           <button class="btn btn-primary" id="addToCartBtn">🛒 Add to Cart</button>
           <button class="btn btn-warning" id="buyNowBtn">⚡ Buy Now</button>
@@ -236,23 +264,26 @@
           <button class="btn btn-report" id="reportUserBtn">⚠️ Report Seller</button>
         </div>
       `;
-    } else {
-      buttons = `<div class="btn-group"><span style="padding:12px; background:#fee2e2; border-radius:40px; color:#b91c1c; font-weight:bold;">Out of stock</span></div>`;
     }
+
     document.getElementById('productDetail').innerHTML = `
-      <div class="product-image">${p.image ? `<img src="${p.image}">` : `<div style="font-size:5rem;">${p.image_icon || '📦'}</div>`}</div>
+      <div class="product-image">
+        ${p.image ? `<img src="${p.image}" alt="${p.name}">` : `<div style="font-size:5rem;">${p.image_icon || '📦'}</div>`}
+      </div>
       <h1>${escapeHtml(p.name)}</h1>
       <div class="price">R ${parseFloat(p.price).toLocaleString()}</div>
-      <div class="stock-info">📦 ${stockText}</div>
+      ${stockHtml}
       <div class="info">
         <p><strong>📍 Location:</strong> ${escapeHtml(p.location)}</p>
         <p><strong>👤 Seller:</strong> ${escapeHtml(p.seller_name || p.seller_email)}</p>
         <p><strong>📝 Description:</strong> ${escapeHtml(p.description || '')}</p>
       </div>
-      ${buttons}
+      ${buttonsHtml}
       <div id="editFormContainer" class="edit-form"></div>
       <a href="cart.html" class="back-link" style="display:block; margin-top:20px;">View Cart →</a>
     `;
+
+    // Attach events
     attachEvents();
   }
 
@@ -272,7 +303,10 @@
     document.getElementById('reportUserBtn')?.addEventListener('click', () => requireLogin(reportUser));
     document.getElementById('editBtn')?.addEventListener('click', showEditForm);
     document.getElementById('deleteBtn')?.addEventListener('click', deleteListing);
-    if (currentUser && productData) checkWishlistStatus();
+
+    if (currentUser && productData && !(currentUser.email === productData.seller_email)) {
+      checkWishlistStatus();
+    }
   }
 
   async function checkWishlistStatus() {
@@ -284,6 +318,7 @@
     }
   }
 
+  // ---- Buyer actions ----
   async function addToCart() {
     const data = await apiCall('cart', 'POST', { listing_id: productData.id, quantity: 1 });
     if (data.success) {
@@ -323,11 +358,13 @@
   async function reportUser() {
     const reason = prompt('Why are you reporting this seller?');
     if (reason && reason.trim()) {
-      // We need the user ID – for simplicity, we'll pass email and look up on admin side (or just store reported email)
+      // For simplicity, we can store the report with the seller's email
+      // You may need to create a separate endpoint or handle it differently.
       alert('Report submitted (seller report will be stored).');
     }
   }
 
+  // ---- Seller actions ----
   function showEditForm() {
     const p = productData;
     const container = document.getElementById('editFormContainer');
@@ -343,7 +380,7 @@
         <option value="shoes" ${p.category==='shoes'?'selected':''}>Shoes</option>
         <option value="furniture" ${p.category==='furniture'?'selected':''}>Furniture</option>
       </select>
-      <label>Stock quantity:</label><input type="number" id="editStock" value="${p.stock}" min="1">
+      <label>Stock quantity:</label><input type="number" id="editStock" value="${p.stock !== null ? p.stock : 1}" min="1">
       <label>Location:</label><input type="text" id="editLocation" value="${escapeHtml(p.location)}">
       <label>Description:</label><textarea id="editDesc">${escapeHtml(p.description || '')}</textarea>
       <button class="btn btn-edit" id="saveEditBtn" style="background:#1e6b4c;">Save</button>
@@ -397,6 +434,7 @@
     }
   }
 
+  // ---------- Init ----------
   checkUser();
 </script>
 </body>
