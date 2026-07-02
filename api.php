@@ -74,14 +74,10 @@ switch ($action) {
     // ---------- LISTINGS ----------
     case 'listings':
         $category = $_GET['category'] ?? '';
-        // Check if stock column exists
-        $hasStock = columnExists($pdo, 'listings', 'stock');
-        $sql = "SELECT * FROM listings";
-        if ($hasStock) {
-            $sql .= " WHERE (stock > 0 OR stock IS NULL)";
-        }
+        // Show items where stock > 0 OR stock IS NULL (treat as in stock)
+        $sql = "SELECT * FROM listings WHERE (stock > 0 OR stock IS NULL)";
         if ($category && $category !== 'all') {
-            $sql .= ($hasStock ? " AND" : " WHERE") . " category = ? ORDER BY id DESC";
+            $sql .= " AND category = ? ORDER BY id DESC";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$category]);
         } else {
@@ -107,14 +103,11 @@ switch ($action) {
         $seller_name = $_POST['seller_name'];
         $seller_email = $_POST['seller_email'];
         $stock = isset($_POST['stock']) ? (int)$_POST['stock'] : 1;
-        $hasStock = columnExists($pdo, 'listings', 'stock');
-        if ($hasStock) {
-            $stmt = $pdo->prepare("INSERT INTO listings (name, category, price, description, location, image, image_icon, seller_name, seller_email, stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$name, $category, $price, $description, $location, $image, $image_icon, $seller_name, $seller_email, $stock]);
-        } else {
-            $stmt = $pdo->prepare("INSERT INTO listings (name, category, price, description, location, image, image_icon, seller_name, seller_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$name, $category, $price, $description, $location, $image, $image_icon, $seller_name, $seller_email]);
-        }
+        if ($stock < 1) $stock = 1;
+
+        // Always include stock column – we'll make sure it exists
+        $stmt = $pdo->prepare("INSERT INTO listings (name, category, price, description, location, image, image_icon, seller_name, seller_email, stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$name, $category, $price, $description, $location, $image, $image_icon, $seller_name, $seller_email, $stock]);
         echo json_encode(['success' => true, 'id' => $pdo->lastInsertId()]);
         break;
 
@@ -132,14 +125,10 @@ switch ($action) {
         $image = $_POST['image'] ?? null;
         $image_icon = $_POST['image_icon'] ?? '📦';
         $stock = isset($_POST['stock']) ? (int)$_POST['stock'] : 1;
-        $hasStock = columnExists($pdo, 'listings', 'stock');
-        if ($hasStock) {
-            $stmt = $pdo->prepare("UPDATE listings SET name = ?, category = ?, price = ?, description = ?, location = ?, image = ?, image_icon = ?, stock = ? WHERE id = ? AND seller_email = ?");
-            $stmt->execute([$name, $category, $price, $description, $location, $image, $image_icon, $stock, $id, $_SESSION['user_email']]);
-        } else {
-            $stmt = $pdo->prepare("UPDATE listings SET name = ?, category = ?, price = ?, description = ?, location = ?, image = ?, image_icon = ? WHERE id = ? AND seller_email = ?");
-            $stmt->execute([$name, $category, $price, $description, $location, $image, $image_icon, $id, $_SESSION['user_email']]);
-        }
+        if ($stock < 1) $stock = 1;
+
+        $stmt = $pdo->prepare("UPDATE listings SET name = ?, category = ?, price = ?, description = ?, location = ?, image = ?, image_icon = ?, stock = ? WHERE id = ? AND seller_email = ?");
+        $stmt->execute([$name, $category, $price, $description, $location, $image, $image_icon, $stock, $id, $_SESSION['user_email']]);
         if ($stmt->rowCount() > 0) {
             echo json_encode(['success' => true]);
         } else {
@@ -158,7 +147,7 @@ switch ($action) {
         echo json_encode(['success' => true]);
         break;
 
-    // ---------- CART (simplified – without stock for now) ----------
+    // ---------- CART ----------
     case 'cart':
         if (!isset($_SESSION['user_id'])) {
             echo json_encode(['success' => false, 'error' => 'Not logged in']);
@@ -166,14 +155,21 @@ switch ($action) {
         }
         $user_id = $_SESSION['user_id'];
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-            $stmt = $pdo->prepare("SELECT c.*, l.name, l.price, l.image, l.image_icon FROM carts c JOIN listings l ON c.listing_id = l.id WHERE c.user_id = ?");
+            $stmt = $pdo->prepare("SELECT c.*, l.name, l.price, l.image, l.image_icon, l.stock FROM carts c JOIN listings l ON c.listing_id = l.id WHERE c.user_id = ?");
             $stmt->execute([$user_id]);
             $cart = $stmt->fetchAll(PDO::FETCH_ASSOC);
             echo json_encode(['success' => true, 'cart' => $cart]);
         } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $listing_id = $_POST['listing_id'];
             $quantity = (int)($_POST['quantity'] ?? 1);
-            // Check if column exists for stock – skip stock check for now to avoid errors
+            // Check stock
+            $stmt = $pdo->prepare("SELECT stock FROM listings WHERE id = ?");
+            $stmt->execute([$listing_id]);
+            $listing = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($listing && $listing['stock'] !== null && $listing['stock'] < $quantity) {
+                echo json_encode(['success' => false, 'error' => 'Not enough stock']);
+                break;
+            }
             $stmt = $pdo->prepare("SELECT * FROM carts WHERE user_id = ? AND listing_id = ?");
             $stmt->execute([$user_id, $listing_id]);
             if ($stmt->rowCount() > 0) {
@@ -226,12 +222,19 @@ switch ($action) {
             break;
         }
         $user_id = $_SESSION['user_id'];
-        $stmt = $pdo->prepare("SELECT c.listing_id, c.quantity, l.price, l.seller_email FROM carts c JOIN listings l ON c.listing_id = l.id WHERE c.user_id = ?");
+        $stmt = $pdo->prepare("SELECT c.listing_id, c.quantity, l.price, l.seller_email, l.stock FROM carts c JOIN listings l ON c.listing_id = l.id WHERE c.user_id = ?");
         $stmt->execute([$user_id]);
         $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
         if (empty($items)) {
             echo json_encode(['success' => false, 'error' => 'Cart empty']);
             break;
+        }
+        // Check stock
+        foreach ($items as $item) {
+            if ($item['stock'] !== null && $item['stock'] < $item['quantity']) {
+                echo json_encode(['success' => false, 'error' => 'Item ' . $item['listing_id'] . ' has insufficient stock']);
+                break 2;
+            }
         }
         $total = 0;
         foreach ($items as $item) $total += $item['price'] * $item['quantity'];
@@ -246,11 +249,9 @@ switch ($action) {
             foreach ($items as $item) {
                 $stmt = $pdo->prepare("INSERT INTO order_items (order_id, listing_id, quantity, price) VALUES (?, ?, ?, ?)");
                 $stmt->execute([$order_id, $item['listing_id'], $item['quantity'], $item['price']]);
-                // Decrease stock if column exists
-                if (columnExists($pdo, 'listings', 'stock')) {
-                    $stmt = $pdo->prepare("UPDATE listings SET stock = stock - ? WHERE id = ?");
-                    $stmt->execute([$item['quantity'], $item['listing_id']]);
-                }
+                // Decrease stock
+                $stmt = $pdo->prepare("UPDATE listings SET stock = stock - ? WHERE id = ?");
+                $stmt->execute([$item['quantity'], $item['listing_id']]);
             }
             $stmt = $pdo->prepare("DELETE FROM carts WHERE user_id = ?");
             $stmt->execute([$user_id]);
@@ -262,9 +263,8 @@ switch ($action) {
         }
         break;
 
-    // ---------- REPORTS, CHAT, ADMIN (simplified for brevity) ----------
-    // For now, we'll include only essential actions to keep the API working.
-    // You can add the rest later.
+    // ---------- REPORTS, CHAT (simplified) ----------
+    // ... keep the rest as in the previous version.
 
     default:
         echo json_encode(['success' => false, 'error' => 'Invalid action']);
