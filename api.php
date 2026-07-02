@@ -397,6 +397,51 @@ switch ($action) {
         echo json_encode(['success' => true]);
         break;
 
+    case 'admin_update_order':
+    if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
+        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+        break;
+    }
+    $order_id = $_POST['order_id'];
+    $status = $_POST['status'];
+    $stmt = $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?");
+    $stmt->execute([$status, $order_id]);
+    echo json_encode(['success' => true]);
+    break;
+
+case 'admin_delete_order':
+    if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
+        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+        break;
+    }
+    $order_id = $_POST['order_id'];
+    $stmt = $pdo->prepare("DELETE FROM orders WHERE id = ?");
+    $stmt->execute([$order_id]);
+    echo json_encode(['success' => true]);
+    break;
+
+case 'admin_delete_report_item':
+    if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
+        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+        break;
+    }
+    $report_id = $_POST['report_id'];
+    $stmt = $pdo->prepare("DELETE FROM reported_items WHERE id = ?");
+    $stmt->execute([$report_id]);
+    echo json_encode(['success' => true]);
+    break;
+
+case 'admin_delete_report_user':
+    if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
+        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+        break;
+    }
+    $report_id = $_POST['report_id'];
+    $stmt = $pdo->prepare("DELETE FROM reported_users WHERE id = ?");
+    $stmt->execute([$report_id]);
+    echo json_encode(['success' => true]);
+    break;
+    
     default:
         echo json_encode(['success' => false, 'error' => 'Invalid action']);
 }
