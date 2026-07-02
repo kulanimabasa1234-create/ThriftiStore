@@ -35,16 +35,13 @@
     .card { background: white; border-radius: 24px; padding: 24px; margin-bottom: 30px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
     .card h2 { border-left: 5px solid #e67e22; padding-left: 16px; margin-bottom: 20px; }
     table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e2e8f0; }
+    th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
     th { background: #f8fafc; }
-    button { background: #e67e22; color: white; border: none; padding: 6px 16px; border-radius: 40px; cursor: pointer; }
+    button { background: #e67e22; color: white; border: none; padding: 6px 16px; border-radius: 40px; cursor: pointer; margin: 2px; }
     .view-more-btn { background: #1e6b4c; margin-top: 12px; }
     .danger-btn { background: #ef4444; }
     .settings-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
     .settings-row label { min-width: 120px; font-weight: 600; }
-    .admin-log { max-height: 200px; overflow-y: auto; background: #f8fafc; padding: 12px; border-radius: 12px; }
-    .admin-log p { padding: 4px 0; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; }
-    .hidden-rows { display: none; }
   </style>
 </head>
 <body>
@@ -70,7 +67,7 @@
   <div class="stats-grid">
     <div class="stat-card"><div class="stat-number" id="statUsers">0</div><div class="stat-label">Users</div></div>
     <div class="stat-card"><div class="stat-number" id="statListings">0</div><div class="stat-label">Active Listings</div></div>
-    <div class="stat-card"><div class="stat-number" id="statOrders">0</div><div class="stat-label">Sold Items</div></div>
+    <div class="stat-card"><div class="stat-number" id="statSoldItems">0</div><div class="stat-label">Sold Items</div></div>
     <div class="stat-card"><div class="stat-number" id="statRevenue">R0</div><div class="stat-label">Revenue</div></div>
     <div class="stat-card"><div class="stat-number" id="statFee">R0</div><div class="stat-label">Platform Fee Income</div></div>
   </div>
@@ -93,6 +90,17 @@
       <tbody id="listingsBody"></tbody>
     </table>
     <button class="view-more-btn" id="viewMoreListingsBtn">View more listings</button>
+  </div>
+
+  <!-- Product Categories -->
+  <div class="card">
+    <h2>🏷️ Product Categories</h2>
+    <table>
+      <thead><tr><th>Category Name</th><th>Actions</th></tr></thead>
+      <tbody id="categoriesBody"></tbody>
+    </table>
+    <button class="view-more-btn" id="viewMoreCategoriesBtn">View more categories</button>
+    <button id="addCategoryBtn" style="margin-left:12px;">+ Add Category</button>
   </div>
 
   <!-- Orders -->
@@ -135,7 +143,7 @@
     <button class="view-more-btn" id="viewMoreChatsBtn">View more conversations</button>
   </div>
 
-  <!-- Site Settings (unchanged) -->
+  <!-- Site Settings -->
   <div class="card">
     <h2>⚙️ Site Settings</h2>
     <div class="settings-row">
@@ -152,21 +160,6 @@
     </div>
     <button id="saveSettingsBtn">Save Settings</button>
     <button id="resetSiteBtn" class="danger-btn" style="margin-left:12px;">Reset Site (Clear Data)</button>
-  </div>
-
-  <!-- Backup & Export -->
-  <div class="card">
-    <h2>💾 Backup & Export</h2>
-    <button id="backupBtn">Download Backup (JSON)</button>
-    <input type="file" id="restoreFile" accept=".json">
-    <button id="restoreBtn">Restore from Backup</button>
-  </div>
-
-  <!-- Admin Activity Log -->
-  <div class="card">
-    <h2>📜 Admin Activity Log</h2>
-    <div id="adminLog" class="admin-log"><p>No activity logged yet.</p></div>
-    <button id="clearLogBtn">Clear Log</button>
   </div>
 </div>
 
@@ -185,7 +178,7 @@
   }
 
   let currentUser = null;
-  let showUsers = false, showListings = false, showOrders = false, showReportedItems = false, showReportedUsers = false, showChats = false;
+  let showUsers = false, showListings = false, showCategories = false, showOrders = false, showReportedItems = false, showReportedUsers = false, showChats = false;
 
   function escapeHtml(str) {
     if (!str) return '';
@@ -249,7 +242,7 @@
     if (stats.success) {
       document.getElementById('statUsers').textContent = stats.stats.users;
       document.getElementById('statListings').textContent = stats.stats.listings;
-      document.getElementById('statOrders').textContent = stats.stats.orders;
+      document.getElementById('statSoldItems').textContent = stats.stats.sold_items;
       document.getElementById('statRevenue').textContent = 'R' + parseFloat(stats.stats.revenue).toFixed(2);
       document.getElementById('statFee').textContent = 'R' + parseFloat(stats.stats.fee_income).toFixed(2);
     }
@@ -261,6 +254,9 @@
     // Listings
     const listings = await apiCall('admin_listings');
     if (listings.success) renderListings(listings.listings);
+
+    // Categories (simulation)
+    renderCategories();
 
     // Orders
     const orders = await apiCall('admin_orders');
@@ -276,8 +272,6 @@
     // Chats
     const chats = await apiCall('admin_chats');
     if (chats.success) renderChats(chats.chats);
-
-    renderAdminLog();
   }
 
   // ---------- Render Functions ----------
@@ -294,9 +288,14 @@
     document.getElementById('viewMoreUsersBtn').style.display = users.length > 3 ? 'inline-block' : 'none';
     document.querySelectorAll('.delete-user').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (confirm('Delete this user?')) {
-          const result = await apiCall('admin_delete_user', 'POST', { user_id: btn.dataset.id });
-          if (result.success) loadAdminData();
+        if (confirm('Delete this user and all their data?')) {
+          const data = await apiCall('admin_delete_user', 'POST', { user_id: btn.dataset.id });
+          if (data.success) {
+            alert('User deleted.');
+            loadAdminData();
+          } else {
+            alert('Failed: ' + data.error);
+          }
         }
       });
     });
@@ -317,13 +316,35 @@
     document.querySelectorAll('.delete-listing').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (confirm('Delete this listing?')) {
-          const result = await apiCall('admin_delete_listing', 'POST', { listing_id: btn.dataset.id });
-          if (result.success) loadAdminData();
+          const data = await apiCall('admin_delete_listing', 'POST', { listing_id: btn.dataset.id });
+          if (data.success) {
+            alert('Listing deleted.');
+            loadAdminData();
+          } else {
+            alert('Failed: ' + data.error);
+          }
         }
       });
     });
   }
   document.getElementById('viewMoreListingsBtn').addEventListener('click', () => { showListings = !showListings; loadAdminData(); });
+
+  function renderCategories() {
+    const cats = ['clothes', 'electronics', 'shoes', 'furniture'];
+    const tbody = document.getElementById('categoriesBody');
+    const limit = showCategories ? cats.length : 3;
+    let html = '';
+    for (let i = 0; i < limit; i++) {
+      html += `<tr><td>${escapeHtml(cats[i])}</td><td><button>Edit</button> <button>Delete</button></td></tr>`;
+    }
+    tbody.innerHTML = html;
+    document.getElementById('viewMoreCategoriesBtn').style.display = cats.length > 3 ? 'inline-block' : 'none';
+  }
+  document.getElementById('viewMoreCategoriesBtn').addEventListener('click', () => { showCategories = !showCategories; renderCategories(); });
+  document.getElementById('addCategoryBtn').addEventListener('click', () => {
+    const newCat = prompt('Enter new category name:');
+    if (newCat) alert('Category added (simulation).');
+  });
 
   function renderOrders(orders) {
     const tbody = document.getElementById('ordersBody');
@@ -341,11 +362,44 @@
         <td>R ${parseFloat(o.fee || 0).toFixed(2)}</td>
         <td>R ${parseFloat(o.seller_gets || 0).toFixed(2)}</td>
         <td>${o.status || 'pending'}</td>
-        <td><button>Mark Shipped</button></td>
+        <td>
+          <button class="order-action" data-id="${o.id}" data-status="shipped">Shipped</button>
+          <button class="order-action" data-id="${o.id}" data-status="completed">Complete</button>
+          <button class="order-action" data-id="${o.id}" data-status="refunded">Refund</button>
+          <button class="order-delete" data-id="${o.id}">Delete</button>
+        </td>
       </tr>`;
     }
     tbody.innerHTML = html;
     document.getElementById('viewMoreOrdersBtn').style.display = orders.length > 3 ? 'inline-block' : 'none';
+
+    // Order action buttons
+    document.querySelectorAll('.order-action').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const orderId = btn.dataset.id;
+        const status = btn.dataset.status;
+        const data = await apiCall('admin_update_order', 'POST', { order_id: orderId, status });
+        if (data.success) {
+          alert('Order updated.');
+          loadAdminData();
+        } else {
+          alert('Failed: ' + data.error);
+        }
+      });
+    });
+    document.querySelectorAll('.order-delete').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (confirm('Delete this order?')) {
+          const data = await apiCall('admin_delete_order', 'POST', { order_id: btn.dataset.id });
+          if (data.success) {
+            alert('Order deleted.');
+            loadAdminData();
+          } else {
+            alert('Failed: ' + data.error);
+          }
+        }
+      });
+    });
   }
   document.getElementById('viewMoreOrdersBtn').addEventListener('click', () => { showOrders = !showOrders; loadAdminData(); });
 
@@ -357,33 +411,44 @@
     for (let i = 0; i < limit; i++) {
       const r = items[i];
       html += `<tr>
-        <td>${r.item_id}</td>
+        <td>${r.listing_id}</td>
         <td>${escapeHtml(r.item_name)}</td>
         <td>${escapeHtml(r.reporter_name)}</td>
         <td>${escapeHtml(r.reason)}</td>
         <td>${new Date(r.created_at).toLocaleString()}</td>
         <td>
-          <button class="resolve-item" data-id="${r.item_id}">Resolve</button>
-          <button class="delete-item-report" data-id="${r.id}">Delete Report</button>
+          <button class="resolve-item-report" data-id="${r.id}" data-listing-id="${r.listing_id}">Delete Item & Resolve</button>
+          <button class="delete-item-report" data-id="${r.id}">Remove Report Only</button>
         </td>
       </tr>`;
     }
     tbody.innerHTML = html;
     document.getElementById('viewMoreReportedItemsBtn').style.display = items.length > 3 ? 'inline-block' : 'none';
-    document.querySelectorAll('.resolve-item').forEach(btn => {
+
+    document.querySelectorAll('.resolve-item-report').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (confirm('Resolve this report? (The item will remain)')) {
-          // We'll delete the report from the reported_items table
-          const result = await apiCall('admin_delete_report', 'POST', { report_id: btn.dataset.id, type: 'item' });
-          if (result.success) loadAdminData();
+        if (confirm('Delete the reported item and remove the report?')) {
+          const deleteItem = await apiCall('admin_delete_listing', 'POST', { listing_id: btn.dataset.listingId });
+          if (deleteItem.success) {
+            await apiCall('admin_delete_report_item', 'POST', { report_id: btn.dataset.id });
+            alert('Item deleted and report removed.');
+            loadAdminData();
+          } else {
+            alert('Failed to delete item: ' + deleteItem.error);
+          }
         }
       });
     });
     document.querySelectorAll('.delete-item-report').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (confirm('Delete this report?')) {
-          const result = await apiCall('admin_delete_report', 'POST', { report_id: btn.dataset.id, type: 'item' });
-          if (result.success) loadAdminData();
+        if (confirm('Remove this report only?')) {
+          const data = await apiCall('admin_delete_report_item', 'POST', { report_id: btn.dataset.id });
+          if (data.success) {
+            alert('Report removed.');
+            loadAdminData();
+          } else {
+            alert('Failed: ' + data.error);
+          }
         }
       });
     });
@@ -403,26 +468,38 @@
         <td>${escapeHtml(r.reason)}</td>
         <td>${new Date(r.created_at).toLocaleString()}</td>
         <td>
-          <button class="resolve-user" data-id="${r.id}">Resolve</button>
-          <button class="delete-user-report" data-id="${r.id}">Delete Report</button>
+          <button class="resolve-user-report" data-id="${r.id}" data-user-id="${r.reported_user_id}">Delete User & Resolve</button>
+          <button class="delete-user-report" data-id="${r.id}">Remove Report Only</button>
         </td>
       </tr>`;
     }
     tbody.innerHTML = html;
     document.getElementById('viewMoreReportedUsersBtn').style.display = users.length > 3 ? 'inline-block' : 'none';
-    document.querySelectorAll('.resolve-user').forEach(btn => {
+
+    document.querySelectorAll('.resolve-user-report').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (confirm('Resolve this report? (The user will remain)')) {
-          const result = await apiCall('admin_delete_report', 'POST', { report_id: btn.dataset.id, type: 'user' });
-          if (result.success) loadAdminData();
+        if (confirm('Delete the reported user and all their data?')) {
+          const deleteUser = await apiCall('admin_delete_user', 'POST', { user_id: btn.dataset.userId });
+          if (deleteUser.success) {
+            await apiCall('admin_delete_report_user', 'POST', { report_id: btn.dataset.id });
+            alert('User deleted and report removed.');
+            loadAdminData();
+          } else {
+            alert('Failed to delete user: ' + deleteUser.error);
+          }
         }
       });
     });
     document.querySelectorAll('.delete-user-report').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (confirm('Delete this report?')) {
-          const result = await apiCall('admin_delete_report', 'POST', { report_id: btn.dataset.id, type: 'user' });
-          if (result.success) loadAdminData();
+        if (confirm('Remove this report only?')) {
+          const data = await apiCall('admin_delete_report_user', 'POST', { report_id: btn.dataset.id });
+          if (data.success) {
+            alert('Report removed.');
+            loadAdminData();
+          } else {
+            alert('Failed: ' + data.error);
+          }
         }
       });
     });
@@ -437,8 +514,8 @@
     for (let i = 0; i < limit; i++) {
       const c = chats[i];
       html += `<tr>
-        <td>${escapeHtml(c.sender_email)}</td>
-        <td>${escapeHtml(c.receiver_email)}</td>
+        <td>${escapeHtml(c.sender_name)} (${escapeHtml(c.sender_email)})</td>
+        <td>${escapeHtml(c.receiver_name)} (${escapeHtml(c.receiver_email)})</td>
         <td>${escapeHtml(c.message)}</td>
         <td>${new Date(c.sent_at).toLocaleString()}</td>
       </tr>`;
@@ -448,29 +525,9 @@
   }
   document.getElementById('viewMoreChatsBtn').addEventListener('click', () => { showChats = !showChats; loadAdminData(); });
 
-  // Admin log (unchanged)
-  function renderAdminLog() {
-    const log = JSON.parse(localStorage.getItem('thrifti_admin_log') || '[]');
-    const container = document.getElementById('adminLog');
-    if (!log.length) { container.innerHTML = '<p>No activity logged yet.</p>'; return; }
-    let html = '';
-    log.slice().reverse().forEach(entry => {
-      html += `<p>${new Date(entry.timestamp).toLocaleString()} - ${escapeHtml(entry.action)}: ${escapeHtml(entry.details)}</p>`;
-    });
-    container.innerHTML = html;
-  }
-
-  function addAdminLog(action, details) {
-    const log = JSON.parse(localStorage.getItem('thrifti_admin_log') || '[]');
-    log.push({ timestamp: Date.now(), action, details });
-    localStorage.setItem('thrifti_admin_log', JSON.stringify(log));
-    renderAdminLog();
-  }
-
-  // Settings (unchanged)
+  // ---------- Settings ----------
   document.getElementById('saveSettingsBtn').addEventListener('click', () => {
-    addAdminLog('Settings', 'Updated site settings');
-    alert('Settings saved.');
+    alert('Settings saved (simulation).');
   });
 
   document.getElementById('resetSiteBtn').addEventListener('click', () => {
@@ -479,48 +536,6 @@
       alert('Data cleared.');
       window.location.reload();
     }
-  });
-
-  document.getElementById('clearLogBtn').addEventListener('click', () => {
-    if (confirm('Clear admin log?')) {
-      localStorage.removeItem('thrifti_admin_log');
-      renderAdminLog();
-    }
-  });
-
-  // Backup & Restore (unchanged)
-  document.getElementById('backupBtn').addEventListener('click', () => {
-    const data = {};
-    for (let key in localStorage) {
-      if (key.startsWith('thrifti_')) {
-        data[key] = JSON.parse(localStorage.getItem(key));
-      }
-    }
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `thrifti_backup_${new Date().toISOString()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    addAdminLog('Backup', 'Downloaded backup');
-  });
-
-  document.getElementById('restoreBtn').addEventListener('click', () => {
-    const file = document.getElementById('restoreFile').files[0];
-    if (!file) { alert('Select a backup file.'); return; }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = JSON.parse(e.target.result);
-        for (let key in data) {
-          localStorage.setItem(key, JSON.stringify(data[key]));
-        }
-        alert('Restore successful. Reloading...');
-        window.location.reload();
-      } catch(err) { alert('Invalid backup file.'); }
-    };
-    reader.readAsText(file);
   });
 
   checkUser();
