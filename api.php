@@ -4,6 +4,7 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
 header('Access-Control-Allow-Headers: Content-Type');
 
+// Database credentials (from environment variables)
 $host = getenv('DB_HOST') ?: 'localhost';
 $dbname = getenv('DB_NAME') ?: 'thrifti_db';
 $user = getenv('DB_USER') ?: 'thrifti_user';
@@ -17,13 +18,6 @@ try {
 }
 
 session_start();
-
-// Helper: check if column exists
-function columnExists($pdo, $table, $column) {
-    $stmt = $pdo->prepare("SELECT column_name FROM information_schema.columns WHERE table_name=? AND column_name=?");
-    $stmt->execute([$table, $column]);
-    return $stmt->rowCount() > 0;
-}
 
 $action = $_GET['action'] ?? '';
 
@@ -74,10 +68,9 @@ switch ($action) {
     // ---------- LISTINGS ----------
     case 'listings':
         $category = $_GET['category'] ?? '';
-        // Show items where stock > 0 OR stock IS NULL (treat as in stock)
-        $sql = "SELECT * FROM listings WHERE (stock > 0 OR stock IS NULL)";
+        $sql = "SELECT * FROM listings";
         if ($category && $category !== 'all') {
-            $sql .= " AND category = ? ORDER BY id DESC";
+            $sql .= " WHERE category = ? ORDER BY id DESC";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$category]);
         } else {
@@ -102,38 +95,9 @@ switch ($action) {
         $image_icon = $_POST['image_icon'] ?? '📦';
         $seller_name = $_POST['seller_name'];
         $seller_email = $_POST['seller_email'];
-        $stock = isset($_POST['stock']) ? (int)$_POST['stock'] : 1;
-        if ($stock < 1) $stock = 1;
-
-        // Always include stock column – we'll make sure it exists
-        $stmt = $pdo->prepare("INSERT INTO listings (name, category, price, description, location, image, image_icon, seller_name, seller_email, stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$name, $category, $price, $description, $location, $image, $image_icon, $seller_name, $seller_email, $stock]);
+        $stmt = $pdo->prepare("INSERT INTO listings (name, category, price, description, location, image, image_icon, seller_name, seller_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$name, $category, $price, $description, $location, $image, $image_icon, $seller_name, $seller_email]);
         echo json_encode(['success' => true, 'id' => $pdo->lastInsertId()]);
-        break;
-
-    case 'update_listing':
-        if (!isset($_SESSION['user_id'])) {
-            echo json_encode(['success' => false, 'error' => 'Not logged in']);
-            break;
-        }
-        $id = $_POST['id'];
-        $name = $_POST['name'];
-        $category = $_POST['category'];
-        $price = $_POST['price'];
-        $description = $_POST['description'] ?? '';
-        $location = $_POST['location'];
-        $image = $_POST['image'] ?? null;
-        $image_icon = $_POST['image_icon'] ?? '📦';
-        $stock = isset($_POST['stock']) ? (int)$_POST['stock'] : 1;
-        if ($stock < 1) $stock = 1;
-
-        $stmt = $pdo->prepare("UPDATE listings SET name = ?, category = ?, price = ?, description = ?, location = ?, image = ?, image_icon = ?, stock = ? WHERE id = ? AND seller_email = ?");
-        $stmt->execute([$name, $category, $price, $description, $location, $image, $image_icon, $stock, $id, $_SESSION['user_email']]);
-        if ($stmt->rowCount() > 0) {
-            echo json_encode(['success' => true]);
-        } else {
-            echo json_encode(['success' => false, 'error' => 'Update failed or you are not the seller']);
-        }
         break;
 
     case 'delete_listing':
@@ -155,21 +119,13 @@ switch ($action) {
         }
         $user_id = $_SESSION['user_id'];
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-            $stmt = $pdo->prepare("SELECT c.*, l.name, l.price, l.image, l.image_icon, l.stock FROM carts c JOIN listings l ON c.listing_id = l.id WHERE c.user_id = ?");
+            $stmt = $pdo->prepare("SELECT c.*, l.name, l.price, l.image, l.image_icon FROM carts c JOIN listings l ON c.listing_id = l.id WHERE c.user_id = ?");
             $stmt->execute([$user_id]);
             $cart = $stmt->fetchAll(PDO::FETCH_ASSOC);
             echo json_encode(['success' => true, 'cart' => $cart]);
         } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $listing_id = $_POST['listing_id'];
-            $quantity = (int)($_POST['quantity'] ?? 1);
-            // Check stock
-            $stmt = $pdo->prepare("SELECT stock FROM listings WHERE id = ?");
-            $stmt->execute([$listing_id]);
-            $listing = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($listing && $listing['stock'] !== null && $listing['stock'] < $quantity) {
-                echo json_encode(['success' => false, 'error' => 'Not enough stock']);
-                break;
-            }
+            $quantity = $_POST['quantity'] ?? 1;
             $stmt = $pdo->prepare("SELECT * FROM carts WHERE user_id = ? AND listing_id = ?");
             $stmt->execute([$user_id, $listing_id]);
             if ($stmt->rowCount() > 0) {
@@ -222,49 +178,116 @@ switch ($action) {
             break;
         }
         $user_id = $_SESSION['user_id'];
-        $stmt = $pdo->prepare("SELECT c.listing_id, c.quantity, l.price, l.seller_email, l.stock FROM carts c JOIN listings l ON c.listing_id = l.id WHERE c.user_id = ?");
+        $stmt = $pdo->prepare("SELECT c.listing_id, c.quantity, l.price FROM carts c JOIN listings l ON c.listing_id = l.id WHERE c.user_id = ?");
         $stmt->execute([$user_id]);
         $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
         if (empty($items)) {
             echo json_encode(['success' => false, 'error' => 'Cart empty']);
             break;
         }
-        // Check stock
-        foreach ($items as $item) {
-            if ($item['stock'] !== null && $item['stock'] < $item['quantity']) {
-                echo json_encode(['success' => false, 'error' => 'Item ' . $item['listing_id'] . ' has insufficient stock']);
-                break 2;
-            }
-        }
         $total = 0;
         foreach ($items as $item) $total += $item['price'] * $item['quantity'];
-        $fee = round($total * 0.15, 2);
-        $seller_gets = round($total - $fee, 2);
-
         $pdo->beginTransaction();
         try {
-            $stmt = $pdo->prepare("INSERT INTO orders (user_id, total, fee, seller_gets) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$user_id, $total, $fee, $seller_gets]);
+            $stmt = $pdo->prepare("INSERT INTO orders (user_id, total) VALUES (?, ?)");
+            $stmt->execute([$user_id, $total]);
             $order_id = $pdo->lastInsertId();
             foreach ($items as $item) {
                 $stmt = $pdo->prepare("INSERT INTO order_items (order_id, listing_id, quantity, price) VALUES (?, ?, ?, ?)");
                 $stmt->execute([$order_id, $item['listing_id'], $item['quantity'], $item['price']]);
-                // Decrease stock
-                $stmt = $pdo->prepare("UPDATE listings SET stock = stock - ? WHERE id = ?");
-                $stmt->execute([$item['quantity'], $item['listing_id']]);
             }
             $stmt = $pdo->prepare("DELETE FROM carts WHERE user_id = ?");
             $stmt->execute([$user_id]);
             $pdo->commit();
-            echo json_encode(['success' => true, 'order_id' => $order_id, 'total' => $total, 'fee' => $fee, 'seller_gets' => $seller_gets]);
+            echo json_encode(['success' => true, 'order_id' => $order_id, 'total' => $total]);
         } catch (Exception $e) {
             $pdo->rollBack();
             echo json_encode(['success' => false, 'error' => $e->getMessage()]);
         }
         break;
 
-    // ---------- REPORTS, CHAT (simplified) ----------
-    // ... keep the rest as in the previous version.
+    // ---------- REPORTS ----------
+    case 'report_item':
+        if (!isset($_SESSION['user_id'])) {
+            echo json_encode(['success' => false, 'error' => 'Not logged in']);
+            break;
+        }
+        $listing_id = $_POST['listing_id'];
+        $reason = $_POST['reason'];
+        $reported_by = $_SESSION['user_id'];
+        $stmt = $pdo->prepare("INSERT INTO reported_items (listing_id, reported_by, reason) VALUES (?, ?, ?)");
+        $stmt->execute([$listing_id, $reported_by, $reason]);
+        echo json_encode(['success' => true]);
+        break;
+
+    case 'report_user':
+        if (!isset($_SESSION['user_id'])) {
+            echo json_encode(['success' => false, 'error' => 'Not logged in']);
+            break;
+        }
+        $reported_user_id = $_POST['reported_user_id'];
+        $reason = $_POST['reason'];
+        $reported_by = $_SESSION['user_id'];
+        $stmt = $pdo->prepare("INSERT INTO reported_users (reported_user_id, reported_by, reason) VALUES (?, ?, ?)");
+        $stmt->execute([$reported_user_id, $reported_by, $reason]);
+        echo json_encode(['success' => true]);
+        break;
+
+    // ---------- CHAT ----------
+    case 'send_message':
+        if (!isset($_SESSION['user_id'])) {
+            echo json_encode(['success' => false, 'error' => 'Not logged in']);
+            break;
+        }
+        $receiver_id = $_POST['receiver_id'];
+        $message = $_POST['message'];
+        $sender_id = $_SESSION['user_id'];
+        $stmt = $pdo->prepare("INSERT INTO chats (sender_id, receiver_id, message) VALUES (?, ?, ?)");
+        $stmt->execute([$sender_id, $receiver_id, $message]);
+        echo json_encode(['success' => true]);
+        break;
+
+    case 'get_messages':
+        if (!isset($_SESSION['user_id'])) {
+            echo json_encode(['success' => false, 'error' => 'Not logged in']);
+            break;
+        }
+        $other_user = $_GET['other_user'];
+        $my_id = $_SESSION['user_id'];
+        $stmt = $pdo->prepare("SELECT * FROM chats WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?) ORDER BY sent_at ASC");
+        $stmt->execute([$my_id, $other_user, $other_user, $my_id]);
+        $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['success' => true, 'messages' => $messages]);
+        break;
+
+    // ---------- ADMIN ----------
+    case 'admin_users':
+        if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            break;
+        }
+        $stmt = $pdo->query("SELECT id, name, email, created_at FROM users ORDER BY id DESC");
+        echo json_encode(['success' => true, 'users' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+        break;
+
+    case 'admin_listings':
+        if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            break;
+        }
+        $stmt = $pdo->query("SELECT * FROM listings ORDER BY id DESC");
+        echo json_encode(['success' => true, 'listings' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+        break;
+
+    case 'admin_reports':
+        if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            break;
+        }
+        $items = $pdo->query("SELECT r.*, l.name as item_name, u.name as reporter_name FROM reported_items r JOIN listings l ON r.listing_id = l.id JOIN users u ON r.reported_by = u.id ORDER BY r.id DESC")->fetchAll(PDO::FETCH_ASSOC);
+        $users = $pdo->query("SELECT r.*, u.name as reporter_name, ru.name as reported_name FROM reported_users r JOIN users u ON r.reported_by = u.id JOIN users ru ON r.reported_user_id = ru.id ORDER BY r.id DESC")->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['success' => true, 'reported_items' => $items, 'reported_users' => $users]);
+        break;
 
     default:
         echo json_encode(['success' => false, 'error' => 'Invalid action']);
