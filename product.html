@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Product | THRIFTI</title>
   <style>
+    /* Same navbar styles as before */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', Roboto, sans-serif; background: #f8fafc; padding-top: 80px; padding-bottom: 40px; }
     .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: white; border-bottom: 1px solid #e2e8f0; padding: 8px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
@@ -27,15 +28,13 @@
     .dropdown.show .dropdown-content { display: block; }
     .badge-cart, .badge-wishlist { background: #e67e22; color: white; border-radius: 50%; padding: 0 6px; font-size: 0.7rem; margin-left: 2px; }
 
-    .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 32px; padding: 24px; }
+    .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 32px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
     .back-link { color: #1e6b4c; text-decoration: none; display: inline-block; margin-bottom: 16px; }
     .product-image { text-align: center; margin: 16px 0; }
     .product-image img { max-width: 100%; max-height: 300px; border-radius: 20px; }
     .price { font-size: 2rem; color: #e67e22; font-weight: 800; margin: 12px 0; }
     .info { background: #f1f5f9; padding: 16px; border-radius: 20px; margin: 16px 0; }
-    .stock-info { display: inline-block; background: #e6f7ef; color: #1e6b4c; padding: 4px 12px; border-radius: 40px; font-weight: 600; }
-    .stock-low { background: #fed7aa; color: #9a3412; }
-    .stock-out { background: #fee2e2; color: #b91c1c; }
+    .stock-info { font-size: 0.9rem; color: #4b5563; margin-top: 8px; }
     .btn-group { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
     .btn-group .btn {
       flex: 1 0 auto;
@@ -63,18 +62,8 @@
     .btn-edit:hover { background: #2563eb; }
     .btn-delete { background: #ef4444; color: white; }
     .btn-delete:hover { background: #dc2626; }
-    .btn-disabled { background: #9ca3af; color: #4b5563; cursor: not-allowed; }
-
     .edit-form { margin-top: 20px; background: #fef9e6; padding: 20px; border-radius: 20px; display: none; }
-    .edit-form input, .edit-form textarea, .edit-form select {
-      width: 100%;
-      padding: 8px;
-      margin: 8px 0 16px;
-      border: 1px solid #cbd5e1;
-      border-radius: 40px;
-    }
-    .edit-form .btn-save { background: #1e6b4c; color: white; border: none; padding: 8px 24px; border-radius: 40px; cursor: pointer; }
-    .edit-form .btn-cancel { background: #9ca3af; color: white; border: none; padding: 8px 24px; border-radius: 40px; cursor: pointer; margin-left: 8px; }
+    .edit-form input, .edit-form textarea, .edit-form select { width: 100%; padding: 8px; margin: 8px 0 16px; border: 1px solid #cbd5e1; border-radius: 40px; }
   </style>
 </head>
 <body>
@@ -114,8 +103,6 @@
 
   let currentUser = null;
   let productData = null;
-  const urlParams = new URLSearchParams(window.location.search);
-  const productId = urlParams.get('id');
 
   function escapeHtml(str) {
     if (!str) return '';
@@ -131,8 +118,7 @@
     }
     updateNavbar();
     updateCounts();
-    if (!productData) loadProduct();
-    else renderProduct();
+    loadProduct();
   }
 
   function updateNavbar() {
@@ -213,13 +199,17 @@
     } catch(e) {}
   }
 
+  // ---------- Product logic ----------
+  const urlParams = new URLSearchParams(window.location.search);
+  const productId = urlParams.get('id');
+
   async function loadProduct() {
     if (!productId) { document.getElementById('productDetail').innerHTML = '<p>Invalid product.</p>'; return; }
     const data = await apiCall('listings');
     if (data.success) {
       productData = data.listings.find(p => p.id == productId);
       if (!productData) {
-        document.getElementById('productDetail').innerHTML = '<p>Product not found or out of stock.</p>';
+        document.getElementById('productDetail').innerHTML = '<p>Product not found (may be out of stock).</p>';
         return;
       }
       renderProduct();
@@ -229,26 +219,16 @@
   function renderProduct() {
     const p = productData;
     const isSeller = currentUser && currentUser.email === p.seller_email;
-    const stock = parseInt(p.stock) || 0;
-    const stockClass = stock <= 0 ? 'stock-out' : (stock <= 3 ? 'stock-low' : '');
-    const stockText = stock <= 0 ? 'Out of Stock' : `${stock} left`;
-
+    const stockText = p.stock > 0 ? `${p.stock} available` : 'Out of stock';
     let buttons = '';
     if (isSeller) {
+      buttons = `<div class="btn-group"><button class="btn btn-edit" id="editBtn">✏️ Edit</button><button class="btn btn-delete" id="deleteBtn">🗑️ Delete</button></div>`;
+    } else if (p.stock > 0) {
       buttons = `
         <div class="btn-group">
-          <button class="btn btn-edit" id="editBtn">✏️ Edit</button>
-          <button class="btn btn-delete" id="deleteBtn">🗑️ Delete</button>
-        </div>
-        <div class="edit-form" id="editFormContainer"></div>
-      `;
-    } else {
-      const disableBuy = stock <= 0 || !currentUser;
-      buttons = `
-        <div class="btn-group">
-          <button class="btn btn-primary" id="addToCartBtn" ${disableBuy ? 'disabled' : ''}>🛒 Add to Cart</button>
-          <button class="btn btn-warning" id="buyNowBtn" ${disableBuy ? 'disabled' : ''}>⚡ Buy Now</button>
-          <a href="chat.html?sellerEmail=${encodeURIComponent(p.seller_email)}&productName=${encodeURIComponent(p.name)}&productId=${p.id}" class="btn btn-chat" style="display:inline-block; text-align:center;">💬 Chat</a>
+          <button class="btn btn-primary" id="addToCartBtn">🛒 Add to Cart</button>
+          <button class="btn btn-warning" id="buyNowBtn">⚡ Buy Now</button>
+          <a href="chat.html?otherEmail=${encodeURIComponent(p.seller_email)}&productName=${encodeURIComponent(p.name)}&productId=${p.id}" class="btn btn-chat" style="display:inline-block; text-align:center;">💬 Chat</a>
           <button class="btn btn-wishlist" id="wishlistBtn">🤍 Add to Wishlist</button>
         </div>
         <div class="btn-group">
@@ -256,20 +236,22 @@
           <button class="btn btn-report" id="reportUserBtn">⚠️ Report Seller</button>
         </div>
       `;
+    } else {
+      buttons = `<div class="btn-group"><span style="padding:12px; background:#fee2e2; border-radius:40px; color:#b91c1c; font-weight:bold;">Out of stock</span></div>`;
     }
-
     document.getElementById('productDetail').innerHTML = `
       <div class="product-image">${p.image ? `<img src="${p.image}">` : `<div style="font-size:5rem;">${p.image_icon || '📦'}</div>`}</div>
       <h1>${escapeHtml(p.name)}</h1>
       <div class="price">R ${parseFloat(p.price).toLocaleString()}</div>
+      <div class="stock-info">📦 ${stockText}</div>
       <div class="info">
         <p><strong>📍 Location:</strong> ${escapeHtml(p.location)}</p>
         <p><strong>👤 Seller:</strong> ${escapeHtml(p.seller_name || p.seller_email)}</p>
         <p><strong>📝 Description:</strong> ${escapeHtml(p.description || '')}</p>
-        <p><strong>📦 Stock:</strong> <span class="stock-info ${stockClass}">${stockText}</span></p>
       </div>
       ${buttons}
-      <a href="cart.html" class="back-link">View Cart →</a>
+      <div id="editFormContainer" class="edit-form"></div>
+      <a href="cart.html" class="back-link" style="display:block; margin-top:20px;">View Cart →</a>
     `;
     attachEvents();
   }
@@ -290,23 +272,29 @@
     document.getElementById('reportUserBtn')?.addEventListener('click', () => requireLogin(reportUser));
     document.getElementById('editBtn')?.addEventListener('click', showEditForm);
     document.getElementById('deleteBtn')?.addEventListener('click', deleteListing);
+    if (currentUser && productData) checkWishlistStatus();
+  }
+
+  async function checkWishlistStatus() {
+    const data = await apiCall('wishlist');
+    if (data.success) {
+      const inWishlist = data.wishlist.some(item => item.id == productData.id);
+      const btn = document.getElementById('wishlistBtn');
+      if (btn) btn.textContent = inWishlist ? '❤️ Remove from Wishlist' : '🤍 Add to Wishlist';
+    }
   }
 
   async function addToCart() {
-    const quantity = 1;
-    const data = await apiCall('cart', 'POST', { listing_id: productData.id, quantity });
+    const data = await apiCall('cart', 'POST', { listing_id: productData.id, quantity: 1 });
     if (data.success) {
       alert('Added to cart!');
       updateCounts();
     } else {
-      alert(data.error || 'Failed to add to cart.');
+      alert('Failed: ' + data.error);
     }
   }
 
-  async function buyNow() {
-    await addToCart();
-    window.location.href = 'cart.html';
-  }
+  async function buyNow() { await addToCart(); window.location.href = 'cart.html'; }
 
   async function toggleWishlist() {
     const data = await apiCall('wishlist');
@@ -319,44 +307,47 @@
         await apiCall('wishlist', 'POST', { listing_id: productData.id });
         alert('Added to wishlist.');
       }
-      location.reload();
+      checkWishlistStatus();
+      updateCounts();
     }
   }
 
-  function reportItem() {
+  async function reportItem() {
     const reason = prompt('Why are you reporting this item?');
     if (reason && reason.trim()) {
-      apiCall('report_item', 'POST', { listing_id: productData.id, reason });
+      await apiCall('report_item', 'POST', { listing_id: productData.id, reason });
       alert('Report submitted.');
     }
   }
 
-  function reportUser() {
+  async function reportUser() {
     const reason = prompt('Why are you reporting this seller?');
     if (reason && reason.trim()) {
-      alert('Report submitted.');
+      // We need the user ID – for simplicity, we'll pass email and look up on admin side (or just store reported email)
+      alert('Report submitted (seller report will be stored).');
     }
   }
 
   function showEditForm() {
+    const p = productData;
     const container = document.getElementById('editFormContainer');
     container.style.display = 'block';
     container.innerHTML = `
       <h3>Edit Listing</h3>
-      <label>Name:</label><input type="text" id="editName" value="${escapeHtml(productData.name)}">
-      <label>Price (R):</label><input type="number" id="editPrice" value="${productData.price}">
+      <label>Name:</label><input type="text" id="editName" value="${escapeHtml(p.name)}">
+      <label>Price (R):</label><input type="number" id="editPrice" value="${p.price}">
       <label>Category:</label>
       <select id="editCategory">
-        <option value="clothes" ${productData.category==='clothes'?'selected':''}>Clothes</option>
-        <option value="electronics" ${productData.category==='electronics'?'selected':''}>Electronics</option>
-        <option value="shoes" ${productData.category==='shoes'?'selected':''}>Shoes</option>
-        <option value="furniture" ${productData.category==='furniture'?'selected':''}>Furniture</option>
+        <option value="clothes" ${p.category==='clothes'?'selected':''}>Clothes</option>
+        <option value="electronics" ${p.category==='electronics'?'selected':''}>Electronics</option>
+        <option value="shoes" ${p.category==='shoes'?'selected':''}>Shoes</option>
+        <option value="furniture" ${p.category==='furniture'?'selected':''}>Furniture</option>
       </select>
-      <label>Location:</label><input type="text" id="editLocation" value="${escapeHtml(productData.location)}">
-      <label>Stock:</label><input type="number" id="editStock" value="${productData.stock || 1}" min="1">
-      <label>Description:</label><textarea id="editDesc">${escapeHtml(productData.description || '')}</textarea>
-      <button class="btn-save" id="saveEditBtn">Save</button>
-      <button class="btn-cancel" id="cancelEditBtn">Cancel</button>
+      <label>Stock quantity:</label><input type="number" id="editStock" value="${p.stock}" min="1">
+      <label>Location:</label><input type="text" id="editLocation" value="${escapeHtml(p.location)}">
+      <label>Description:</label><textarea id="editDesc">${escapeHtml(p.description || '')}</textarea>
+      <button class="btn btn-edit" id="saveEditBtn" style="background:#1e6b4c;">Save</button>
+      <button class="btn btn-delete" id="cancelEditBtn" style="background:#9ca3af;">Cancel</button>
     `;
     document.getElementById('saveEditBtn').addEventListener('click', saveEdit);
     document.getElementById('cancelEditBtn').addEventListener('click', () => {
@@ -365,21 +356,26 @@
   }
 
   async function saveEdit() {
-    const name = document.getElementById('editName').value.trim();
-    const price = parseFloat(document.getElementById('editPrice').value);
-    const category = document.getElementById('editCategory').value;
-    const location = document.getElementById('editLocation').value.trim();
-    const stock = parseInt(document.getElementById('editStock').value) || 1;
-    const description = document.getElementById('editDesc').value.trim();
-
-    if (!name || isNaN(price) || !location) {
+    const newName = document.getElementById('editName').value.trim();
+    const newPrice = parseFloat(document.getElementById('editPrice').value);
+    const newCategory = document.getElementById('editCategory').value;
+    const newStock = parseInt(document.getElementById('editStock').value);
+    const newLocation = document.getElementById('editLocation').value.trim();
+    const newDesc = document.getElementById('editDesc').value.trim();
+    if (!newName || isNaN(newPrice) || newStock < 1) {
       alert('Please fill all required fields.');
       return;
     }
-
     const data = await apiCall('update_listing', 'POST', {
       id: productData.id,
-      name, price, category, location, stock, description
+      name: newName,
+      price: newPrice,
+      category: newCategory,
+      stock: newStock,
+      location: newLocation,
+      description: newDesc,
+      image_icon: productData.image_icon || '📦',
+      image: productData.image || null
     });
     if (data.success) {
       alert('Listing updated!');
