@@ -9,10 +9,9 @@
     body {
       font-family: 'Segoe UI', Roboto, sans-serif;
       background: #f8fafc;
-      padding-top: 80px; /* space for fixed navbar */
+      padding-top: 80px;
       color: #0f172a;
     }
-    /* ===== NAVBAR ===== */
     .navbar {
       position: fixed;
       top: 0; left: 0; right: 0;
@@ -96,17 +95,7 @@
       transition: 0.2s;
       white-space: nowrap;
     }
-    .nav-actions a:hover, .nav-actions button:hover {
-      background: #f1f5f9;
-    }
-    .nav-actions .sell-btn {
-      background: #e67e22;
-      border: none;
-      color: white;
-    }
-    .nav-actions .sell-btn:hover {
-      background: #d35400;
-    }
+    .nav-actions a:hover, .nav-actions button:hover { background: #f1f5f9; }
     .user-greeting {
       background: #1e6b4c;
       color: white;
@@ -124,7 +113,6 @@
       cursor: pointer;
       font-weight: 600;
     }
-    /* Three-dot dropdown */
     .dropdown {
       position: relative;
       display: inline-block;
@@ -160,12 +148,8 @@
       cursor: pointer;
       text-decoration: none;
     }
-    .dropdown-content a:hover, .dropdown-content button:hover {
-      background: #f1f5f9;
-    }
-    .dropdown.show .dropdown-content {
-      display: block;
-    }
+    .dropdown-content a:hover, .dropdown-content button:hover { background: #f1f5f9; }
+    .dropdown.show .dropdown-content { display: block; }
     .badge-cart, .badge-wishlist {
       background: #e67e22;
       color: white;
@@ -174,7 +158,6 @@
       font-size: 0.7rem;
       margin-left: 2px;
     }
-    /* ===== MAIN ===== */
     .container {
       max-width: 1280px;
       margin: 0 auto;
@@ -257,10 +240,8 @@
   </style>
 </head>
 <body>
-<!-- ===== NAVBAR ===== -->
 <nav class="navbar" id="mainNavbar">
   <a href="index.html" class="logo">THRIFTI <small>local · trusted</small></a>
-
   <div class="nav-categories" id="categoryNav">
     <button data-cat="all" class="active">All</button>
     <button data-cat="clothes">Clothes</button>
@@ -268,17 +249,12 @@
     <button data-cat="shoes">Shoes</button>
     <button data-cat="furniture">Furniture</button>
   </div>
-
   <div class="search-box">
     <input type="text" id="searchInput" placeholder="🔍 Search products...">
   </div>
-
-  <div class="nav-actions" id="navActions">
-    <!-- filled by JS -->
-  </div>
+  <div class="nav-actions" id="navActions"></div>
 </nav>
 
-<!-- ===== MAIN ===== -->
 <div class="container">
   <div class="hero">
     <h2>🇿🇦 Keep money in your community</h2>
@@ -289,110 +265,53 @@
       <span>🤝 Community vouching</span>
     </div>
   </div>
-
-  <div id="filterStatus" class="filter-message">Showing <strong>all items</strong> near you</div>
+  <div id="filterStatus" class="filter-message">🔍 Showing <strong>all items</strong> near you</div>
   <div class="section-title" id="categoryTitle">Recently listed nearby</div>
   <div id="productsGrid" class="listings-grid"></div>
   <p style="text-align:center; font-size:0.85rem;">All items within 5–10km • Safe meet-ups at local hubs</p>
 </div>
 
-<footer>
-  <div class="container">THRIFTI — empowering South Africa’s circular economy.</div>
-</footer>
+<footer><div class="container">THRIFTI — empowering South Africa's circular economy.</div></footer>
 
 <script>
-  // ---------- Clean fake demo data ----------
-  (function removeFakeDemoData() {
-    let listings = localStorage.getItem('thrifti_listings');
-    if (listings) {
-      let parsed = JSON.parse(listings);
-      const filtered = parsed.filter(item => item.id !== 1 && item.id !== 2 && item.id !== 3);
-      if (filtered.length !== parsed.length) localStorage.setItem('thrifti_listings', JSON.stringify(filtered));
+  const API_BASE = 'https://thriftistore-xh2m.onrender.com/api.php';
+
+  let currentUser = null;
+  let allListings = [];
+  let currentCategory = 'all';
+  let currentSearch = '';
+
+  // ---------- API calls ----------
+  async function apiCall(action, method = 'GET', data = null) {
+    const url = `${API_BASE}?action=${action}`;
+    const options = { method };
+    if (data) {
+      options.headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+      options.body = new URLSearchParams(data);
     }
-  })();
-
-  // ---------- Load listings ----------
-  function loadListings() {
-    const stored = localStorage.getItem('thrifti_listings');
-    return (stored && stored !== '[]') ? JSON.parse(stored) : [];
+    const res = await fetch(url, options);
+    return await res.json();
   }
 
-  let allProducts = loadListings();
-  let currentCategory = "all";
-  let currentSearch = "";
-
-  function filterProducts() {
-    let filtered = [...allProducts];
-    if (currentCategory !== "all") filtered = filtered.filter(p => p.category === currentCategory);
-    if (currentSearch.trim() !== "") {
-      const searchLower = currentSearch.toLowerCase();
-      filtered = filtered.filter(p => p.name.toLowerCase().includes(searchLower));
+  // ---------- Check user ----------
+  async function checkUser() {
+    const data = await apiCall('get_user');
+    if (data.success) {
+      currentUser = data.user;
+    } else {
+      currentUser = null;
     }
-    return filtered;
+    updateNavbar();
+    updateCounts();
   }
 
-  function renderProducts() {
-    const products = filterProducts();
-    const grid = document.getElementById("productsGrid");
-    if (!grid) return;
-    if (products.length === 0) {
-      grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px; background:#fff; border-radius:32px;">
-        🛍️ No items match your search.<br>Be the first to <strong>sell an item</strong>!
-      </div>`;
-      return;
-    }
-    grid.innerHTML = products.map(p => `
-      <div class="product-card" data-id="${p.id}">
-        <div class="card-img">
-          ${p.image ? `<img src="${p.image}" alt="${p.name}">` : (p.imageIcon || '📦')}
-        </div>
-        <div class="card-content">
-          <div class="card-title">${escapeHtml(p.name)}</div>
-          <div class="card-price">R ${p.price.toLocaleString()}</div>
-          <div class="card-location">📍 ${escapeHtml(p.location)}</div>
-          <div><span class="seller-badge">${escapeHtml(p.sellerName || 'Local seller')}</span></div>
-        </div>
-      </div>
-    `).join('');
-    document.querySelectorAll('.product-card').forEach(card => {
-      card.addEventListener('click', () => {
-        window.location.href = `product.html?id=${card.dataset.id}`;
-      });
-    });
-    updateFilterMessage();
-  }
-
-  function updateFilterMessage() {
-    const count = filterProducts().length;
-    let msg = `Showing <strong>${count}</strong> items`;
-    if (currentCategory !== "all") msg += ` in <strong>${currentCategory}</strong>`;
-    if (currentSearch) msg += ` matching <strong>"${escapeHtml(currentSearch)}"</strong>`;
-    document.getElementById("filterStatus").innerHTML = `🔍 ${msg}`;
-  }
-
-  function setActiveCategory(cat) {
-    currentCategory = cat;
-    document.querySelectorAll('.nav-categories button').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.cat === cat);
-    });
-    renderProducts();
-  }
-
-  // ---------- Navbar helpers ----------
-  function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
-  }
-
-  // ---------- Update navbar based on login ----------
+  // ---------- Navbar ----------
   function updateNavbar() {
-    const loggedIn = localStorage.getItem('thrifti_logged_in');
     const actions = document.getElementById('navActions');
-    if (loggedIn) {
-      const user = JSON.parse(loggedIn);
-      const isAdmin = (user.email === 'admin@thrifti.com');
+    if (currentUser) {
+      const isAdmin = currentUser.email === 'admin@thrifti.com';
       actions.innerHTML = `
-        <div class="user-greeting">👋 ${escapeHtml(user.name)} <button id="logoutBtn">Logout</button></div>
+        <div class="user-greeting">👋 ${escapeHtml(currentUser.name)} <button id="logoutBtn">Logout</button></div>
         <a href="cart.html" class="cart-link">🛒 <span class="badge-cart" id="cartCount">0</span></a>
         <a href="wishlist.html" class="wishlist-link">💚 <span class="badge-wishlist" id="wishlistCount">0</span></a>
         <div class="dropdown" id="mainDropdown">
@@ -407,23 +326,14 @@
           </div>
         </div>
       `;
-      // Update counts
-      updateCartCount();
-      updateWishlistCount();
-      // Logout
-      document.getElementById('logoutBtn')?.addEventListener('click', () => {
-        localStorage.removeItem('thrifti_logged_in');
-        location.reload();
+      document.getElementById('logoutBtn').addEventListener('click', async () => {
+        await apiCall('logout', 'POST');
+        currentUser = null;
+        updateNavbar();
+        window.location.reload();
       });
-      // Dropdown toggle
-      document.querySelector('.dropbtn')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        document.getElementById('mainDropdown').classList.toggle('show');
-      });
-      // Close dropdown on outside click
-      window.addEventListener('click', () => {
-        document.getElementById('mainDropdown')?.classList.remove('show');
-      });
+      setupDropdown();
+      updateCounts();
     } else {
       actions.innerHTML = `
         <a href="login.html" class="login-link">Log in</a>
@@ -437,63 +347,107 @@
           </div>
         </div>
       `;
-      updateCartCount();
-      updateWishlistCount();
-      // Dropdown toggle
-      document.querySelector('.dropbtn')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        document.getElementById('mainDropdown').classList.toggle('show');
-      });
-      window.addEventListener('click', () => {
-        document.getElementById('mainDropdown')?.classList.remove('show');
-      });
+      setupDropdown();
+      updateCounts();
     }
   }
 
-  function updateCartCount() {
-    const cart = JSON.parse(localStorage.getItem('thrifti_cart') || '[]');
-    const total = cart.reduce((sum, item) => sum + item.quantity, 0);
-    const badge = document.getElementById('cartCount');
-    if (badge) badge.textContent = total;
+  function setupDropdown() {
+    document.querySelector('.dropbtn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.getElementById('mainDropdown').classList.toggle('show');
+    });
+    window.addEventListener('click', () => {
+      document.getElementById('mainDropdown')?.classList.remove('show');
+    });
   }
 
-  function updateWishlistCount() {
-    const wishlist = JSON.parse(localStorage.getItem('thrifti_wishlist') || '[]');
-    const badge = document.getElementById('wishlistCount');
-    if (badge) badge.textContent = wishlist.length;
+  async function updateCounts() {
+    if (!currentUser) {
+      document.getElementById('cartCount').textContent = '0';
+      document.getElementById('wishlistCount').textContent = '0';
+      return;
+    }
+    try {
+      const cartData = await apiCall('cart');
+      if (cartData.success) {
+        const total = cartData.cart.reduce((s, i) => s + i.quantity, 0);
+        document.getElementById('cartCount').textContent = total;
+      }
+      const wishData = await apiCall('wishlist');
+      if (wishData.success) {
+        document.getElementById('wishlistCount').textContent = wishData.wishlist.length;
+      }
+    } catch(e) {}
   }
 
-  // ---------- Search and category events ----------
-  document.getElementById('searchInput')?.addEventListener('input', (e) => {
+  // ---------- Load listings ----------
+  async function loadListings() {
+    const data = await apiCall(`listings${currentCategory !== 'all' ? '&category=' + currentCategory : ''}`);
+    if (data.success) {
+      allListings = data.listings;
+      renderProducts();
+    } else {
+      alert('Failed to load listings');
+    }
+  }
+
+  function renderProducts() {
+    let filtered = allListings;
+    if (currentSearch) {
+      filtered = filtered.filter(p => p.name.toLowerCase().includes(currentSearch.toLowerCase()));
+    }
+    const grid = document.getElementById('productsGrid');
+    if (!filtered.length) {
+      grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px; background:#fff; border-radius:32px;">No items match.</div>`;
+      return;
+    }
+    grid.innerHTML = filtered.map(p => `
+      <div class="product-card" data-id="${p.id}">
+        <div class="card-img">
+          ${p.image ? `<img src="${p.image}" alt="${p.name}">` : (p.image_icon || '📦')}
+        </div>
+        <div class="card-content">
+          <div class="card-title">${escapeHtml(p.name)}</div>
+          <div class="card-price">R ${parseFloat(p.price).toLocaleString()}</div>
+          <div class="card-location">📍 ${escapeHtml(p.location)}</div>
+          <div><span class="seller-badge">${escapeHtml(p.seller_name || 'Local seller')}</span></div>
+        </div>
+      </div>
+    `).join('');
+    document.querySelectorAll('.product-card').forEach(card => {
+      card.addEventListener('click', () => {
+        window.location.href = `product.html?id=${card.dataset.id}`;
+      });
+    });
+    document.getElementById('filterStatus').innerHTML = `🔍 Showing <strong>${filtered.length}</strong> items`;
+  }
+
+  // ---------- Search and category ----------
+  document.getElementById('searchInput').addEventListener('input', (e) => {
     currentSearch = e.target.value;
     renderProducts();
   });
 
   document.querySelectorAll('.nav-categories button').forEach(btn => {
-    btn.addEventListener('click', () => setActiveCategory(btn.dataset.cat));
+    btn.addEventListener('click', () => {
+      currentCategory = btn.dataset.cat;
+      document.querySelectorAll('.nav-categories button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadListings();
+    });
   });
 
-  // ---------- Refresh data periodically ----------
-  function refreshData() {
-    allProducts = loadListings();
-    renderProducts();
-    updateCartCount();
-    updateWishlistCount();
+  // ---------- Helper ----------
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
   }
-  window.addEventListener('storage', refreshData);
-  setInterval(() => {
-    const newProducts = loadListings();
-    if (JSON.stringify(newProducts) !== JSON.stringify(allProducts)) {
-      allProducts = newProducts;
-      renderProducts();
-    }
-    updateCartCount();
-    updateWishlistCount();
-  }, 2000);
 
   // ---------- Init ----------
-  updateNavbar();
-  setActiveCategory("all");
+  checkUser();
+  loadListings();
 </script>
 </body>
+</html>
 </html>
