@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cart | THRIFTI</title>
   <style>
-    /* Same navbar styles as product.html – include them */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', Roboto, sans-serif; background: #f8fafc; padding-top: 80px; padding-bottom: 40px; }
     .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: white; border-bottom: 1px solid #e2e8f0; padding: 8px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
@@ -56,6 +55,8 @@
     .modal-content input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 40px; }
     .modal-content button { background: #e67e22; color: white; border: none; padding: 10px; border-radius: 40px; width: 100%; cursor: pointer; }
     .close-modal { float: right; cursor: pointer; font-size: 1.5rem; }
+    .payment-breakdown { background: #f8fafc; padding: 12px; border-radius: 16px; margin: 12px 0; }
+    .payment-breakdown p { margin: 6px 0; }
   </style>
 </head>
 <body>
@@ -84,13 +85,14 @@
 <div id="paymentModal" class="modal">
   <div class="modal-content">
     <span class="close-modal" id="closeModal">&times;</span>
-    <h3>💳 Yoco Sandbox (Test Payment)</h3>
-    <p>Use test card:</p>
-    <input type="text" placeholder="Card number" id="cardNumber" value="4111 1111 1111 1111">
-    <input type="text" placeholder="MM/YY" id="cardExpiry" value="12/28">
-    <input type="text" placeholder="CVC" id="cardCvc" value="123">
-    <button id="simulatePayBtn">Pay R <span id="modalTotal"></span></button>
-    <p style="font-size:0.7rem; margin-top:12px;">🔐 Simulation – in production Yoco API would process.</p>
+    <h3>💳 Confirm Payment</h3>
+    <div class="payment-breakdown">
+      <p><strong>Total:</strong> R <span id="payTotal"></span></p>
+      <p><strong>Seller gets (85%):</strong> R <span id="paySeller"></span></p>
+      <p><strong>Platform fee (15%):</strong> R <span id="payFee"></span></p>
+    </div>
+    <button id="confirmPayBtn">✅ Confirm & Pay</button>
+    <p style="font-size:0.7rem; margin-top:12px;">🔐 This is a simulation – in production, payment would be processed securely.</p>
   </div>
 </div>
 
@@ -125,6 +127,7 @@
     }
     updateNavbar();
     updateCounts();
+    renderCart();
   }
 
   function updateNavbar() {
@@ -169,6 +172,7 @@
         <div class="dropdown" id="mainDropdown">
           <button class="dropbtn">⋮</button>
           <div class="dropdown-content">
+            <a href="admin_login.html">🔐 Admin Login</a>
             <a href="manual.html">📖 User Manual</a>
             <a href="contact.html">📧 Contact</a>
           </div>
@@ -283,29 +287,30 @@
   }
 
   // ---------- Payment ----------
-  let currentTotal = 0;
-
   async function showPaymentModal() {
     const data = await apiCall('cart');
     if (!data.success || data.cart.length === 0) { alert('Cart empty.'); return; }
     let total = 0;
     data.cart.forEach(i => total += i.price * i.quantity);
-    currentTotal = total;
-    document.getElementById('modalTotal').textContent = total.toLocaleString();
+    const fee = total * 0.15;
+    const sellerGets = total - fee;
+    document.getElementById('payTotal').textContent = total.toFixed(2);
+    document.getElementById('payFee').textContent = fee.toFixed(2);
+    document.getElementById('paySeller').textContent = sellerGets.toFixed(2);
     document.getElementById('paymentModal').style.display = 'flex';
+    // Store total for confirmation
+    document.getElementById('confirmPayBtn').onclick = async () => {
+      const checkout = await apiCall('checkout', 'POST');
+      if (checkout.success) {
+        alert(`✅ Payment successful!\nOrder #${checkout.order_id}\nTotal: R ${checkout.total.toFixed(2)}\nSeller gets: R ${checkout.seller_gets.toFixed(2)}\nPlatform fee: R ${checkout.fee.toFixed(2)}`);
+        document.getElementById('paymentModal').style.display = 'none';
+        renderCart();
+        updateCounts();
+      } else {
+        alert('Checkout failed: ' + checkout.error);
+      }
+    };
   }
-
-  document.getElementById('simulatePayBtn').addEventListener('click', async () => {
-    const data = await apiCall('checkout', 'POST');
-    if (data.success) {
-      alert(`✅ Payment successful! Order #${data.order_id} – R ${data.total.toLocaleString()}`);
-      document.getElementById('paymentModal').style.display = 'none';
-      renderCart();
-      updateCounts();
-    } else {
-      alert('Checkout failed: ' + data.error);
-    }
-  });
 
   document.getElementById('closeModal').addEventListener('click', () => {
     document.getElementById('paymentModal').style.display = 'none';
@@ -316,10 +321,7 @@
     }
   });
 
-  // ---------- Init ----------
-  checkUser().then(() => {
-    if (currentUser) renderCart();
-  });
+  checkUser();
 </script>
 </body>
 </html>
