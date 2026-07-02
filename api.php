@@ -272,36 +272,97 @@ switch ($action) {
         echo json_encode(['success' => true, 'messages' => $messages]);
         break;
 
-    // ---------- ADMIN ----------
-    case 'admin_users':
-        if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
-            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
-            break;
-        }
-        $stmt = $pdo->query("SELECT id, name, email, created_at FROM users ORDER BY id DESC");
-        echo json_encode(['success' => true, 'users' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+// ---------- ADMIN ----------
+case 'admin_users':
+    if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
+        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
         break;
+    }
+    $stmt = $pdo->query("SELECT id, name, email, created_at FROM users ORDER BY id DESC");
+    echo json_encode(['success' => true, 'users' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+    break;
 
-    case 'admin_listings':
-        if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
-            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
-            break;
-        }
-        $stmt = $pdo->query("SELECT * FROM listings ORDER BY id DESC");
-        echo json_encode(['success' => true, 'listings' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+case 'admin_listings':
+    if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
+        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
         break;
+    }
+    $stmt = $pdo->query("SELECT * FROM listings ORDER BY id DESC");
+    echo json_encode(['success' => true, 'listings' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+    break;
 
-    case 'admin_reports':
-        if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
-            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
-            break;
-        }
-        $items = $pdo->query("SELECT r.*, l.name as item_name, u.name as reporter_name FROM reported_items r JOIN listings l ON r.listing_id = l.id JOIN users u ON r.reported_by = u.id ORDER BY r.id DESC")->fetchAll(PDO::FETCH_ASSOC);
-        $users = $pdo->query("SELECT r.*, u.name as reporter_name, ru.name as reported_name FROM reported_users r JOIN users u ON r.reported_by = u.id JOIN users ru ON r.reported_user_id = ru.id ORDER BY r.id DESC")->fetchAll(PDO::FETCH_ASSOC);
-        echo json_encode(['success' => true, 'reported_items' => $items, 'reported_users' => $users]);
+case 'admin_orders':
+    if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
+        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
         break;
+    }
+    $stmt = $pdo->query("SELECT o.*, u.name as buyer_name, u.email as buyer_email FROM orders o JOIN users u ON o.user_id = u.id ORDER BY o.id DESC");
+    $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($orders as &$order) {
+        $stmt = $pdo->prepare("SELECT oi.*, l.name FROM order_items oi JOIN listings l ON oi.listing_id = l.id WHERE oi.order_id = ?");
+        $stmt->execute([$order['id']]);
+        $order['items'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    echo json_encode(['success' => true, 'orders' => $orders]);
+    break;
 
-    default:
-        echo json_encode(['success' => false, 'error' => 'Invalid action']);
-}
-?>
+case 'admin_reports':
+    if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
+        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+        break;
+    }
+    $items = $pdo->query("SELECT r.*, l.name as item_name, u.name as reporter_name FROM reported_items r JOIN listings l ON r.listing_id = l.id JOIN users u ON r.reported_by = u.id ORDER BY r.id DESC")->fetchAll(PDO::FETCH_ASSOC);
+    $users = $pdo->query("SELECT r.*, u.name as reporter_name, ru.name as reported_name FROM reported_users r JOIN users u ON r.reported_by = u.id JOIN users ru ON r.reported_user_id = ru.id ORDER BY r.id DESC")->fetchAll(PDO::FETCH_ASSOC);
+    echo json_encode(['success' => true, 'reported_items' => $items, 'reported_users' => $users]);
+    break;
+
+case 'admin_stats':
+    if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
+        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+        break;
+    }
+    $users_count = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
+    $listings_count = $pdo->query("SELECT COUNT(*) FROM listings")->fetchColumn();
+    $orders_count = $pdo->query("SELECT COUNT(*) FROM orders")->fetchColumn();
+    $total_revenue = $pdo->query("SELECT COALESCE(SUM(total), 0) FROM orders")->fetchColumn();
+    $total_fee = $pdo->query("SELECT COALESCE(SUM(fee), 0) FROM orders")->fetchColumn();
+    echo json_encode(['success' => true, 'stats' => [
+        'users' => $users_count,
+        'listings' => $listings_count,
+        'orders' => $orders_count,
+        'revenue' => $total_revenue,
+        'fee_income' => $total_fee
+    ]]);
+    break;
+
+case 'admin_chats':
+    if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
+        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+        break;
+    }
+    $stmt = $pdo->query("SELECT * FROM chats ORDER BY sent_at DESC");
+    $chats = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    echo json_encode(['success' => true, 'chats' => $chats]);
+    break;
+
+case 'admin_delete_user':
+    if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
+        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+        break;
+    }
+    $user_id = $_POST['user_id'];
+    $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
+    $stmt->execute([$user_id]);
+    echo json_encode(['success' => true]);
+    break;
+
+case 'admin_delete_listing':
+    if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
+        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+        break;
+    }
+    $listing_id = $_POST['listing_id'];
+    $stmt = $pdo->prepare("DELETE FROM listings WHERE id = ?");
+    $stmt->execute([$listing_id]);
+    echo json_encode(['success' => true]);
+    break;
