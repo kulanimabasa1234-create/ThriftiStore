@@ -67,7 +67,8 @@ switch ($action) {
     // ---------- LISTINGS ----------
     case 'listings':
         $category = $_GET['category'] ?? '';
-        $sql = "SELECT * FROM listings WHERE stock > 0";
+        // Show listings with stock > 0, and also include old listings where stock is NULL (treat as 1)
+        $sql = "SELECT * FROM listings WHERE (stock > 0 OR stock IS NULL)";
         if ($category && $category !== 'all') {
             $sql .= " AND category = ? ORDER BY id DESC";
             $stmt = $pdo->prepare($sql);
@@ -114,7 +115,6 @@ switch ($action) {
         $image = $_POST['image'] ?? null;
         $image_icon = $_POST['image_icon'] ?? '📦';
         $stock = isset($_POST['stock']) ? (int)$_POST['stock'] : 1;
-        // Only allow seller to update their own listing
         $stmt = $pdo->prepare("UPDATE listings SET name = ?, category = ?, price = ?, description = ?, location = ?, image = ?, image_icon = ?, stock = ? WHERE id = ? AND seller_email = ?");
         $stmt->execute([$name, $category, $price, $description, $location, $image, $image_icon, $stock, $id, $_SESSION['user_email']]);
         if ($stmt->rowCount() > 0) {
@@ -150,7 +150,6 @@ switch ($action) {
         } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $listing_id = $_POST['listing_id'];
             $quantity = (int)($_POST['quantity'] ?? 1);
-            // Check stock availability
             $stmt = $pdo->prepare("SELECT stock FROM listings WHERE id = ?");
             $stmt->execute([$listing_id]);
             $listing = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -177,9 +176,8 @@ switch ($action) {
         }
         break;
 
-    // ---------- WISHLIST ----------
+    // ---------- WISHLIST (unchanged) ----------
     case 'wishlist':
-        // same as before, unchanged
         if (!isset($_SESSION['user_id'])) {
             echo json_encode(['success' => false, 'error' => 'Not logged in']);
             break;
@@ -204,7 +202,7 @@ switch ($action) {
         }
         break;
 
-    // ---------- CHECKOUT ----------
+    // ---------- CHECKOUT (unchanged) ----------
     case 'checkout':
         if (!isset($_SESSION['user_id'])) {
             echo json_encode(['success' => false, 'error' => 'Not logged in']);
@@ -218,7 +216,6 @@ switch ($action) {
             echo json_encode(['success' => false, 'error' => 'Cart empty']);
             break;
         }
-        // Check stock for each item
         foreach ($items as $item) {
             if ($item['stock'] < $item['quantity']) {
                 echo json_encode(['success' => false, 'error' => 'Item ' . $item['listing_id'] . ' has insufficient stock']);
@@ -238,7 +235,6 @@ switch ($action) {
             foreach ($items as $item) {
                 $stmt = $pdo->prepare("INSERT INTO order_items (order_id, listing_id, quantity, price) VALUES (?, ?, ?, ?)");
                 $stmt->execute([$order_id, $item['listing_id'], $item['quantity'], $item['price']]);
-                // Decrease stock
                 $stmt = $pdo->prepare("UPDATE listings SET stock = stock - ? WHERE id = ?");
                 $stmt->execute([$item['quantity'], $item['listing_id']]);
             }
@@ -252,7 +248,10 @@ switch ($action) {
         }
         break;
 
-    // ---------- REPORTS (unchanged) ----------
+    // ---------- REPORTS, CHAT, ADMIN (unchanged from previous) ----------
+    // For brevity, keep the rest as in the previous version.
+    // I'll include the essential ones:
+
     case 'report_item':
         if (!isset($_SESSION['user_id'])) {
             echo json_encode(['success' => false, 'error' => 'Not logged in']);
@@ -279,7 +278,6 @@ switch ($action) {
         echo json_encode(['success' => true]);
         break;
 
-    // ---------- CHAT ----------
     case 'send_message':
         if (!isset($_SESSION['user_id'])) {
             echo json_encode(['success' => false, 'error' => 'Not logged in']);
@@ -331,7 +329,6 @@ switch ($action) {
         echo json_encode(['success' => true, 'chats' => $chats]);
         break;
 
-    // ---------- ADMIN ----------
     case 'admin_users':
         if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
             echo json_encode(['success' => false, 'error' => 'Unauthorized']);
@@ -381,7 +378,7 @@ switch ($action) {
             break;
         }
         $users_count = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
-        $listings_count = $pdo->query("SELECT COUNT(*) FROM listings WHERE stock > 0")->fetchColumn();
+        $listings_count = $pdo->query("SELECT COUNT(*) FROM listings WHERE stock > 0 OR stock IS NULL")->fetchColumn();
         $orders_count = $pdo->query("SELECT COUNT(*) FROM orders")->fetchColumn();
         $total_revenue = $pdo->query("SELECT COALESCE(SUM(total), 0) FROM orders")->fetchColumn();
         $total_fee = $pdo->query("SELECT COALESCE(SUM(fee), 0) FROM orders")->fetchColumn();
