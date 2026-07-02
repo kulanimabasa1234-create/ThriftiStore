@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chat | THRIFTI</title>
   <style>
-    /* Same navbar styles – include them */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', Roboto, sans-serif; background: #f8fafc; padding-top: 80px; height: 100vh; display: flex; flex-direction: column; }
     .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: white; border-bottom: 1px solid #e2e8f0; padding: 8px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
@@ -76,6 +75,9 @@
   }
 
   let currentUser = null;
+  let receiverEmail = null;
+  let messages = [];
+  let intervalId = null;
 
   function escapeHtml(str) {
     if (!str) return '';
@@ -137,6 +139,7 @@
         <div class="dropdown" id="mainDropdown">
           <button class="dropbtn">⋮</button>
           <div class="dropdown-content">
+            <a href="admin_login.html">🔐 Admin Login</a>
             <a href="manual.html">📖 User Manual</a>
             <a href="contact.html">📧 Contact</a>
           </div>
@@ -173,43 +176,24 @@
   }
 
   // ---------- Chat ----------
-  let otherUserId = null;
-  let messages = [];
-  let intervalId = null;
-
   async function initChat() {
     const urlParams = new URLSearchParams(window.location.search);
-    const sellerEmail = urlParams.get('sellerEmail');
+    receiverEmail = urlParams.get('otherEmail') || urlParams.get('sellerEmail');
     const productName = urlParams.get('productName') || 'Item';
     const productId = urlParams.get('productId');
 
-    if (!sellerEmail) {
+    if (!receiverEmail) {
       document.getElementById('chatContainer').innerHTML = `
         <div class="chat-header"><span>Error</span></div>
-        <div style="padding:20px; text-align:center;">No seller specified.</div>
+        <div style="padding:20px; text-align:center;">No recipient specified.</div>
       `;
       return;
-    }
-
-    // Get the other user's ID
-    const usersData = await apiCall('admin_users');
-    if (usersData.success) {
-      const otherUser = usersData.users.find(u => u.email === sellerEmail);
-      if (otherUser) {
-        otherUserId = otherUser.id;
-      } else {
-        document.getElementById('chatContainer').innerHTML = `
-          <div class="chat-header"><span>Error</span></div>
-          <div style="padding:20px; text-align:center;">Seller not found.</div>
-        `;
-        return;
-      }
     }
 
     // Render chat UI
     document.getElementById('chatContainer').innerHTML = `
       <div class="chat-header">
-        <div>💬 Chat with ${escapeHtml(sellerEmail)}<br><small>${escapeHtml(productName)}</small></div>
+        <div>💬 Chat with ${escapeHtml(receiverEmail)}<br><small>${escapeHtml(productName)}</small></div>
         <a href="product.html?id=${productId || ''}">← Back</a>
       </div>
       <div class="messages-area" id="messagesArea"></div>
@@ -225,14 +209,13 @@
       if (e.key === 'Enter') sendMessage();
     });
 
-    // Auto-refresh every 2 seconds
     if (intervalId) clearInterval(intervalId);
     intervalId = setInterval(loadMessages, 2000);
   }
 
   async function loadMessages() {
-    if (!otherUserId) return;
-    const data = await apiCall('get_messages', 'GET', null, { other_user: otherUserId });
+    if (!receiverEmail || !currentUser) return;
+    const data = await apiCall('get_messages', 'GET', null, { other_email: receiverEmail });
     if (data.success) {
       messages = data.messages;
       displayMessages();
@@ -244,7 +227,7 @@
     if (!area) return;
     area.innerHTML = '';
     messages.forEach(msg => {
-      const isMe = msg.sender_id == currentUser.id;
+      const isMe = msg.sender_email === currentUser.email;
       const div = document.createElement('div');
       div.className = `message ${isMe ? 'message-me' : 'message-other'}`;
       div.innerHTML = `
@@ -259,14 +242,16 @@
   async function sendMessage() {
     const input = document.getElementById('messageInput');
     const text = input.value.trim();
-    if (!text || !otherUserId) return;
+    if (!text || !receiverEmail) return;
     const data = await apiCall('send_message', 'POST', {
-      receiver_id: otherUserId,
+      receiver_email: receiverEmail,
       message: text
     });
     if (data.success) {
       input.value = '';
-      loadMessages();
+      await loadMessages();
+    } else {
+      alert('Failed to send message: ' + data.error);
     }
   }
 
