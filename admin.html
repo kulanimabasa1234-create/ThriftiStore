@@ -95,17 +95,6 @@
     <button class="view-more-btn" id="viewMoreListingsBtn">View more listings</button>
   </div>
 
-  <!-- Product Categories -->
-  <div class="card">
-    <h2>🏷️ Product Categories</h2>
-    <table>
-      <thead><tr><th>Category Name</th><th>Actions</th></tr></thead>
-      <tbody id="categoriesBody"></tbody>
-    </table>
-    <button class="view-more-btn" id="viewMoreCategoriesBtn">View more categories</button>
-    <button id="addCategoryBtn" style="margin-left:12px;">+ Add Category</button>
-  </div>
-
   <!-- Orders -->
   <div class="card">
     <h2>📋 Orders</h2>
@@ -146,7 +135,7 @@
     <button class="view-more-btn" id="viewMoreChatsBtn">View more conversations</button>
   </div>
 
-  <!-- Site Settings -->
+  <!-- Site Settings (unchanged) -->
   <div class="card">
     <h2>⚙️ Site Settings</h2>
     <div class="settings-row">
@@ -196,7 +185,7 @@
   }
 
   let currentUser = null;
-  let showUsers = false, showListings = false, showCategories = false, showOrders = false, showReportedItems = false, showReportedUsers = false, showChats = false;
+  let showUsers = false, showListings = false, showOrders = false, showReportedItems = false, showReportedUsers = false, showChats = false;
 
   function escapeHtml(str) {
     if (!str) return '';
@@ -255,6 +244,7 @@
   }
 
   async function loadAdminData() {
+    // Stats
     const stats = await apiCall('admin_stats');
     if (stats.success) {
       document.getElementById('statUsers').textContent = stats.stats.users;
@@ -264,24 +254,26 @@
       document.getElementById('statFee').textContent = 'R' + parseFloat(stats.stats.fee_income).toFixed(2);
     }
 
+    // Users
     const users = await apiCall('admin_users');
     if (users.success) renderUsers(users.users);
 
+    // Listings
     const listings = await apiCall('admin_listings');
     if (listings.success) renderListings(listings.listings);
 
-    // Categories (stored in localStorage for simplicity – or you can add a categories table)
-    renderCategories();
-
+    // Orders
     const orders = await apiCall('admin_orders');
     if (orders.success) renderOrders(orders.orders);
 
+    // Reports
     const reports = await apiCall('admin_reports');
     if (reports.success) {
       renderReportedItems(reports.reported_items || []);
       renderReportedUsers(reports.reported_users || []);
     }
 
+    // Chats
     const chats = await apiCall('admin_chats');
     if (chats.success) renderChats(chats.chats);
 
@@ -296,20 +288,20 @@
     let html = '';
     for (let i = 0; i < limit; i++) {
       const u = users[i];
-      html += `<tr><td>${escapeHtml(u.name)}</td><td>${escapeHtml(u.email)}</td><td><button class="delete-user" data-email="${escapeHtml(u.email)}">Delete</button></td></tr>`;
+      html += `<tr><td>${escapeHtml(u.name)}</td><td>${escapeHtml(u.email)}</td><td><button class="delete-user" data-id="${u.id}">Delete</button></td></tr>`;
     }
     tbody.innerHTML = html;
     document.getElementById('viewMoreUsersBtn').style.display = users.length > 3 ? 'inline-block' : 'none';
     document.querySelectorAll('.delete-user').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (confirm('Delete user?')) {
-          // You'd need a delete_user endpoint – for now, just reload
-          alert('Delete user: implement in API if needed.');
+        if (confirm('Delete this user?')) {
+          const result = await apiCall('admin_delete_user', 'POST', { user_id: btn.dataset.id });
+          if (result.success) loadAdminData();
         }
       });
     });
   }
-  document.getElementById('viewMoreUsersBtn').addEventListener('click', () => { showUsers = !showUsers; renderUsers(JSON.parse(localStorage.getItem('_admin_users') || '[]')); });
+  document.getElementById('viewMoreUsersBtn').addEventListener('click', () => { showUsers = !showUsers; loadAdminData(); });
 
   function renderListings(listings) {
     const tbody = document.getElementById('listingsBody');
@@ -324,32 +316,14 @@
     document.getElementById('viewMoreListingsBtn').style.display = listings.length > 3 ? 'inline-block' : 'none';
     document.querySelectorAll('.delete-listing').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (confirm('Delete listing?')) {
-          const data = await apiCall('delete_listing', 'POST', { id: btn.dataset.id });
-          if (data.success) loadAdminData();
+        if (confirm('Delete this listing?')) {
+          const result = await apiCall('admin_delete_listing', 'POST', { listing_id: btn.dataset.id });
+          if (result.success) loadAdminData();
         }
       });
     });
   }
   document.getElementById('viewMoreListingsBtn').addEventListener('click', () => { showListings = !showListings; loadAdminData(); });
-
-  function renderCategories() {
-    // Simple: show default categories (can be extended)
-    const cats = ['clothes', 'electronics', 'shoes', 'furniture'];
-    const tbody = document.getElementById('categoriesBody');
-    const limit = showCategories ? cats.length : 3;
-    let html = '';
-    for (let i = 0; i < limit; i++) {
-      html += `<tr><td>${escapeHtml(cats[i])}</td><td><button>Edit</button> <button>Delete</button></td></tr>`;
-    }
-    tbody.innerHTML = html;
-    document.getElementById('viewMoreCategoriesBtn').style.display = cats.length > 3 ? 'inline-block' : 'none';
-  }
-  document.getElementById('viewMoreCategoriesBtn').addEventListener('click', () => { showCategories = !showCategories; renderCategories(); });
-  document.getElementById('addCategoryBtn').addEventListener('click', () => {
-    const newCat = prompt('Enter new category name:');
-    if (newCat) alert('Category added (simulation).');
-  });
 
   function renderOrders(orders) {
     const tbody = document.getElementById('ordersBody');
@@ -382,10 +356,37 @@
     let html = '';
     for (let i = 0; i < limit; i++) {
       const r = items[i];
-      html += `<tr><td>${r.item_id}</td><td>${escapeHtml(r.item_name)}</td><td>${escapeHtml(r.reporter_name)}</td><td>${escapeHtml(r.reason)}</td><td>${new Date(r.created_at).toLocaleString()}</td><td><button>Resolve</button></td></tr>`;
+      html += `<tr>
+        <td>${r.item_id}</td>
+        <td>${escapeHtml(r.item_name)}</td>
+        <td>${escapeHtml(r.reporter_name)}</td>
+        <td>${escapeHtml(r.reason)}</td>
+        <td>${new Date(r.created_at).toLocaleString()}</td>
+        <td>
+          <button class="resolve-item" data-id="${r.item_id}">Resolve</button>
+          <button class="delete-item-report" data-id="${r.id}">Delete Report</button>
+        </td>
+      </tr>`;
     }
     tbody.innerHTML = html;
     document.getElementById('viewMoreReportedItemsBtn').style.display = items.length > 3 ? 'inline-block' : 'none';
+    document.querySelectorAll('.resolve-item').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (confirm('Resolve this report? (The item will remain)')) {
+          // We'll delete the report from the reported_items table
+          const result = await apiCall('admin_delete_report', 'POST', { report_id: btn.dataset.id, type: 'item' });
+          if (result.success) loadAdminData();
+        }
+      });
+    });
+    document.querySelectorAll('.delete-item-report').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (confirm('Delete this report?')) {
+          const result = await apiCall('admin_delete_report', 'POST', { report_id: btn.dataset.id, type: 'item' });
+          if (result.success) loadAdminData();
+        }
+      });
+    });
   }
   document.getElementById('viewMoreReportedItemsBtn').addEventListener('click', () => { showReportedItems = !showReportedItems; loadAdminData(); });
 
@@ -396,10 +397,35 @@
     let html = '';
     for (let i = 0; i < limit; i++) {
       const r = users[i];
-      html += `<tr><td>${escapeHtml(r.reported_name)}</td><td>${escapeHtml(r.reporter_name)}</td><td>${escapeHtml(r.reason)}</td><td>${new Date(r.created_at).toLocaleString()}</td><td><button>Resolve</button></td></tr>`;
+      html += `<tr>
+        <td>${escapeHtml(r.reported_name)}</td>
+        <td>${escapeHtml(r.reporter_name)}</td>
+        <td>${escapeHtml(r.reason)}</td>
+        <td>${new Date(r.created_at).toLocaleString()}</td>
+        <td>
+          <button class="resolve-user" data-id="${r.id}">Resolve</button>
+          <button class="delete-user-report" data-id="${r.id}">Delete Report</button>
+        </td>
+      </tr>`;
     }
     tbody.innerHTML = html;
     document.getElementById('viewMoreReportedUsersBtn').style.display = users.length > 3 ? 'inline-block' : 'none';
+    document.querySelectorAll('.resolve-user').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (confirm('Resolve this report? (The user will remain)')) {
+          const result = await apiCall('admin_delete_report', 'POST', { report_id: btn.dataset.id, type: 'user' });
+          if (result.success) loadAdminData();
+        }
+      });
+    });
+    document.querySelectorAll('.delete-user-report').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (confirm('Delete this report?')) {
+          const result = await apiCall('admin_delete_report', 'POST', { report_id: btn.dataset.id, type: 'user' });
+          if (result.success) loadAdminData();
+        }
+      });
+    });
   }
   document.getElementById('viewMoreReportedUsersBtn').addEventListener('click', () => { showReportedUsers = !showReportedUsers; loadAdminData(); });
 
@@ -410,15 +436,20 @@
     let html = '';
     for (let i = 0; i < limit; i++) {
       const c = chats[i];
-      html += `<tr><td>${escapeHtml(c.sender_email)}</td><td>${escapeHtml(c.receiver_email)}</td><td>${escapeHtml(c.message)}</td><td>${new Date(c.sent_at).toLocaleString()}</td></tr>`;
+      html += `<tr>
+        <td>${escapeHtml(c.sender_email)}</td>
+        <td>${escapeHtml(c.receiver_email)}</td>
+        <td>${escapeHtml(c.message)}</td>
+        <td>${new Date(c.sent_at).toLocaleString()}</td>
+      </tr>`;
     }
     tbody.innerHTML = html;
     document.getElementById('viewMoreChatsBtn').style.display = chats.length > 3 ? 'inline-block' : 'none';
   }
   document.getElementById('viewMoreChatsBtn').addEventListener('click', () => { showChats = !showChats; loadAdminData(); });
 
+  // Admin log (unchanged)
   function renderAdminLog() {
-    // Simple log stored in localStorage
     const log = JSON.parse(localStorage.getItem('thrifti_admin_log') || '[]');
     const container = document.getElementById('adminLog');
     if (!log.length) { container.innerHTML = '<p>No activity logged yet.</p>'; return; }
@@ -436,7 +467,7 @@
     renderAdminLog();
   }
 
-  // ---------- Settings ----------
+  // Settings (unchanged)
   document.getElementById('saveSettingsBtn').addEventListener('click', () => {
     addAdminLog('Settings', 'Updated site settings');
     alert('Settings saved.');
@@ -457,7 +488,7 @@
     }
   });
 
-  // ---------- Backup & Restore ----------
+  // Backup & Restore (unchanged)
   document.getElementById('backupBtn').addEventListener('click', () => {
     const data = {};
     for (let key in localStorage) {
