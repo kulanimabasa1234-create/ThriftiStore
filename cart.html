@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cart | THRIFTI</title>
   <style>
+    /* same as before */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', Roboto, sans-serif; background: #f8fafc; padding-top: 80px; padding-bottom: 40px; }
     .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: white; border-bottom: 1px solid #e2e8f0; padding: 8px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
@@ -43,65 +44,21 @@
     .checkout-btn { background: #1e6b4c; color: white; border: none; padding: 12px 32px; border-radius: 40px; font-weight: bold; cursor: pointer; margin-top: 16px; }
     .empty-cart { text-align: center; padding: 40px; color: #6c757d; }
 
-    .modal {
-      display: none;
-      position: fixed;
-      top:0; left:0; width:100%; height:100%;
-      background: rgba(0,0,0,0.5);
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-    }
-    .modal-content {
-      background: white;
-      max-width: 480px;
-      width: 90%;
-      border-radius: 32px;
-      padding: 24px;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
+    .modal { /* same as before */ display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 2000; }
+    .modal-content { background: white; max-width: 480px; width:90%; border-radius: 32px; padding: 24px; max-height: 90vh; overflow-y: auto; }
     .modal-content h3 { margin-bottom: 16px; }
     .close-modal { float: right; cursor: pointer; font-size: 1.5rem; }
-    .payment-breakdown {
-      background: #f8fafc;
-      padding: 16px;
-      border-radius: 16px;
-      margin: 12px 0 20px;
-    }
+    .payment-breakdown { background: #f8fafc; padding: 16px; border-radius: 16px; margin: 12px 0 20px; }
     .payment-breakdown p { display: flex; justify-content: space-between; margin: 6px 0; }
     .payment-breakdown .total-row { font-weight: bold; font-size: 1.1rem; border-top: 1px solid #cbd5e1; padding-top: 8px; margin-top: 8px; }
     .card-form { margin-top: 16px; }
     .card-form .form-group { margin-bottom: 16px; }
     .card-form label { display: block; font-weight: 600; margin-bottom: 4px; font-size: 0.85rem; }
-    .card-form input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #cbd5e1;
-      border-radius: 40px;
-      font-size: 0.95rem;
-      transition: 0.2s;
-    }
-    .card-form input:focus {
-      outline: none;
-      border-color: #e67e22;
-      box-shadow: 0 0 0 3px rgba(230,126,34,0.1);
-    }
+    .card-form input { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 40px; font-size: 0.95rem; }
+    .card-form input:focus { outline: none; border-color: #e67e22; box-shadow: 0 0 0 3px rgba(230,126,34,0.1); }
     .card-form .row { display: flex; gap: 12px; }
     .card-form .row .form-group { flex: 1; }
-    .pay-btn {
-      background: #e67e22;
-      color: white;
-      border: none;
-      padding: 14px;
-      border-radius: 40px;
-      font-weight: bold;
-      font-size: 1rem;
-      cursor: pointer;
-      width: 100%;
-      margin-top: 16px;
-      transition: 0.2s;
-    }
+    .pay-btn { background: #e67e22; color: white; border: none; padding: 14px; border-radius: 40px; font-weight: bold; font-size: 1rem; cursor: pointer; width: 100%; margin-top: 16px; }
     .pay-btn:hover { background: #d35400; }
     .pay-btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .payment-success { text-align: center; padding: 20px; }
@@ -111,7 +68,6 @@
   </style>
 </head>
 <body>
-<!-- Navbar (same as before) -->
 <nav class="navbar" id="mainNavbar">
   <a href="index.html" class="logo">THRIFTI <small>local · trusted</small></a>
   <div class="nav-categories">
@@ -139,39 +95,23 @@
   <div class="modal-content">
     <span class="close-modal" id="closeModal">&times;</span>
     <h3>💳 Complete Payment</h3>
-
     <div id="paymentBreakdownContainer"></div>
-
     <div class="card-form" id="cardForm">
-      <div class="form-group">
-        <label>Cardholder Name</label>
-        <input type="text" id="cardName" placeholder="John Doe" required>
-      </div>
-      <div class="form-group">
-        <label>Card Number</label>
-        <input type="text" id="cardNumber" placeholder="4111 1111 1111 1111" maxlength="19" required>
-      </div>
+      <div class="form-group"><label>Cardholder Name</label><input type="text" id="cardName" placeholder="John Doe" required></div>
+      <div class="form-group"><label>Card Number</label><input type="text" id="cardNumber" placeholder="4111 1111 1111 1111" maxlength="19" required></div>
       <div class="row">
-        <div class="form-group">
-          <label>Expiry (MM/YY)</label>
-          <input type="text" id="cardExpiry" placeholder="MM/YY" maxlength="5" required>
-        </div>
-        <div class="form-group">
-          <label>CVV</label>
-          <input type="text" id="cardCvv" placeholder="123" maxlength="4" required>
-        </div>
+        <div class="form-group"><label>Expiry (MM/YY)</label><input type="text" id="cardExpiry" placeholder="MM/YY" maxlength="5" required></div>
+        <div class="form-group"><label>CVV</label><input type="text" id="cardCvv" placeholder="123" maxlength="4" required></div>
       </div>
       <button class="pay-btn" id="payBtn">Pay Now</button>
     </div>
-
     <div id="paymentSuccess" style="display:none;" class="payment-success">
       <div class="icon">✅</div>
       <h3>Payment Successful!</h3>
       <p>Your order has been placed. Thank you for supporting local sellers.</p>
       <p><a href="index.html" class="back-link" style="margin-top:12px;">Continue shopping</a></p>
     </div>
-
-    <p style="font-size:0.7rem; margin-top:12px; text-align:center; color:#6c757d;">Payment will be processed securely.</p>
+    <p style="font-size:0.7rem; margin-top:12px; text-align:center; color:#6c757d;">🔐 This is a simulation – in production, payment would be processed securely.</p>
   </div>
 </div>
 
@@ -353,10 +293,24 @@
     if (newQty <= 0) {
       await removeItem(listingId);
     } else {
-      await apiCall('cart', 'POST', { listing_id: listingId, quantity: 1 });
+      // Check if stock allows this quantity
+      const listingData = await apiCall('listings');
+      if (listingData.success) {
+        const listing = listingData.listings.find(l => l.id == listingId);
+        if (listing && listing.stock < newQty) {
+          alert('Insufficient stock. Only ' + listing.stock + ' available.');
+          return;
+        }
+      }
+      // Update cart with new quantity
+      const result = await apiCall('cart', 'POST', { listing_id: listingId, quantity: newQty });
+      if (result.success) {
+        renderCart();
+        updateCounts();
+      } else {
+        alert(result.error || 'Failed to update quantity.');
+      }
     }
-    renderCart();
-    updateCounts();
   }
 
   async function removeItem(listingId) {
@@ -380,7 +334,6 @@
     currentFee = total * 0.15;
     currentSellerGets = total - currentFee;
 
-    // Show breakdown
     document.getElementById('paymentBreakdownContainer').innerHTML = `
       <div class="payment-breakdown">
         <p><span>Total</span> <span>R ${total.toFixed(2)}</span></p>
@@ -390,7 +343,6 @@
       </div>
     `;
 
-    // Reset form and show card form
     document.getElementById('cardForm').style.display = 'block';
     document.getElementById('paymentSuccess').style.display = 'none';
     document.getElementById('payBtn').disabled = false;
@@ -409,13 +361,11 @@
     const expiry = document.getElementById('cardExpiry').value.trim();
     const cvv = document.getElementById('cardCvv').value.trim();
 
-    // Basic validation
     if (!name) { alert('Please enter cardholder name.'); return; }
     if (!number || number.length < 15) { alert('Please enter a valid card number.'); return; }
     if (!expiry || !expiry.match(/^\d{2}\/\d{2}$/)) { alert('Please enter expiry in MM/YY format.'); return; }
     if (!cvv || cvv.length < 3) { alert('Please enter a valid CVV.'); return; }
 
-    // Disable button to prevent double-click
     this.disabled = true;
     this.textContent = 'Processing...';
 
@@ -427,7 +377,6 @@
         document.getElementById('paymentSuccess').style.display = 'block';
         document.querySelector('#paymentSuccess p').innerHTML =
           `Order #${orderId} – R ${result.total.toFixed(2)} paid.<br>Seller gets R ${result.seller_gets.toFixed(2)}, platform fee R ${result.fee.toFixed(2)}.`;
-        // clear cart
         renderCart();
         updateCounts();
       } else {
@@ -451,35 +400,21 @@
     }
   });
 
-  // Card number formatting (add spaces)
+  // Card formatting
   document.getElementById('cardNumber').addEventListener('input', function(e) {
     let value = this.value.replace(/\D/g, '');
-    if (value.length > 16) value = value.slice(0, 16);
+    if (value.length > 16) value = value.slice(0,16);
     let formatted = value.match(/.{1,4}/g)?.join(' ') || value;
     this.value = formatted;
   });
-
-  // Expiry formatting
   document.getElementById('cardExpiry').addEventListener('input', function(e) {
     let value = this.value.replace(/\D/g, '');
-    if (value.length > 4) value = value.slice(0, 4);
-    if (value.length >= 2) {
-      this.value = value.slice(0,2) + '/' + value.slice(2);
-    } else {
-      this.value = value;
-    }
+    if (value.length > 4) value = value.slice(0,4);
+    if (value.length >= 2) this.value = value.slice(0,2) + '/' + value.slice(2);
+    else this.value = value;
   });
-
-  // CVV max length
   document.getElementById('cardCvv').addEventListener('input', function(e) {
     if (this.value.length > 4) this.value = this.value.slice(0,4);
-  });
-
-  // Enter key on card fields triggers payment
-  document.querySelectorAll('#cardForm input').forEach(input => {
-    input.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') document.getElementById('payBtn').click();
-    });
   });
 
   checkUser();
