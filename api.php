@@ -366,3 +366,41 @@ case 'admin_delete_listing':
     $stmt->execute([$listing_id]);
     echo json_encode(['success' => true]);
     break;
+
+    case 'admin_delete_user':
+    if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
+        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+        break;
+    }
+    $user_id = $_POST['user_id'];
+    $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
+    $stmt->execute([$user_id]);
+    echo json_encode(['success' => true]);
+    break;
+
+case 'admin_delete_listing':
+    if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
+        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+        break;
+    }
+    $listing_id = $_POST['listing_id'];
+    $stmt = $pdo->prepare("DELETE FROM listings WHERE id = ?");
+    $stmt->execute([$listing_id]);
+    echo json_encode(['success' => true]);
+    break;
+
+case 'admin_delete_report':
+    if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
+        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+        break;
+    }
+    $report_id = $_POST['report_id'];
+    $type = $_POST['type'];
+    if ($type === 'item') {
+        $stmt = $pdo->prepare("DELETE FROM reported_items WHERE id = ?");
+    } else {
+        $stmt = $pdo->prepare("DELETE FROM reported_users WHERE id = ?");
+    }
+    $stmt->execute([$report_id]);
+    echo json_encode(['success' => true]);
+    break;
