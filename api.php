@@ -235,7 +235,7 @@ switch ($action) {
         echo json_encode(['success' => true]);
         break;
 
-    // ---------- CHAT (fixed) ----------
+    // ---------- CHAT ----------
     case 'send_message':
         if (!isset($_SESSION['user_id'])) {
             echo json_encode(['success' => false, 'error' => 'Not logged in']);
@@ -277,7 +277,6 @@ switch ($action) {
             ORDER BY last_time DESC");
         $stmt->execute([$my_email, $my_email, $my_email]);
         $chats = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        // get last message for each
         foreach ($chats as &$chat) {
             $stmt = $pdo->prepare("SELECT message, sent_at FROM chats WHERE (sender_email = ? AND receiver_email = ?) OR (sender_email = ? AND receiver_email = ?) ORDER BY sent_at DESC LIMIT 1");
             $stmt->execute([$my_email, $chat['other_email'], $chat['other_email'], $my_email]);
@@ -314,7 +313,6 @@ switch ($action) {
         }
         $stmt = $pdo->query("SELECT o.*, u.name as buyer_name, u.email as buyer_email FROM orders o JOIN users u ON o.user_id = u.id ORDER BY o.id DESC");
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        // get order items
         foreach ($orders as &$order) {
             $stmt = $pdo->prepare("SELECT oi.*, l.name FROM order_items oi JOIN listings l ON oi.listing_id = l.id WHERE oi.order_id = ?");
             $stmt->execute([$order['id']]);
@@ -350,6 +348,16 @@ switch ($action) {
             'revenue' => $total_revenue,
             'fee_income' => $total_fee
         ]]);
+        break;
+
+    case 'admin_chats':
+        if (!isset($_SESSION['user_id']) || $_SESSION['user_email'] !== 'admin@thrifti.com') {
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            break;
+        }
+        $stmt = $pdo->query("SELECT * FROM chats ORDER BY sent_at DESC");
+        $chats = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['success' => true, 'chats' => $chats]);
         break;
 
     default:
