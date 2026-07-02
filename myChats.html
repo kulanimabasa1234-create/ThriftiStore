@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Chats | THRIFTI</title>
   <style>
-    /* Same navbar styles – include them */
+    /* navbar styles (same as other pages) */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', Roboto, sans-serif; background: #f8fafc; padding-top: 80px; padding-bottom: 40px; }
     .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: white; border-bottom: 1px solid #e2e8f0; padding: 8px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
@@ -30,10 +30,6 @@
 
     .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 32px; padding: 24px; }
     .back-link { color: #1e6b4c; text-decoration: none; display: inline-block; margin-bottom: 16px; }
-    .chat-item { border: 1px solid #e2e8f0; border-radius: 20px; padding: 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
-    .chat-other { font-weight: bold; }
-    .chat-last { color: #4b5563; font-size: 0.85rem; }
-    .chat-time { font-size: 0.7rem; color: #6c757d; }
     .empty { text-align: center; padding: 40px; color: #6c757d; }
   </style>
 </head>
@@ -56,12 +52,16 @@
 <div class="container">
   <a href="index.html" class="back-link">← Back</a>
   <h1>💬 My Chats</h1>
-  <div id="chatsContainer">Loading...</div>
+  <div id="chatsContainer">
+    <div class="empty">
+      💬 Chat feature coming soon!<br>
+      To start a chat, go to a product page and click "💬 Chat".
+    </div>
+  </div>
 </div>
 
 <script>
   const API_BASE = 'https://thriftistore-xh2m.onrender.com/api.php';
-
   async function apiCall(action, method = 'GET', data = null) {
     const url = `${API_BASE}?action=${action}`;
     const options = { method };
@@ -72,27 +72,17 @@
     const res = await fetch(url, options);
     return await res.json();
   }
-
   let currentUser = null;
-
   function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
   }
-
   async function checkUser() {
     const data = await apiCall('get_user');
-    if (data.success) {
-      currentUser = data.user;
-    } else {
-      currentUser = null;
-      window.location.href = 'login.html';
-    }
+    if (data.success) { currentUser = data.user; } else { currentUser = null; }
     updateNavbar();
     updateCounts();
-    loadChats();
   }
-
   function updateNavbar() {
     const actions = document.getElementById('navActions');
     if (currentUser) {
@@ -150,7 +140,6 @@
       updateCounts();
     }
   }
-
   async function updateCounts() {
     if (!currentUser) {
       document.getElementById('cartCount').textContent = '0';
@@ -169,21 +158,6 @@
       }
     } catch(e) {}
   }
-
-  async function loadChats() {
-    // We need a way to list chats. Since the API doesn't have a "list chats" endpoint,
-    // we'll query messages with each user – for now, we'll show a placeholder.
-    // In a real implementation, you'd add a "get_chats" endpoint in api.php.
-    // For this demo, we'll show a message.
-    const container = document.getElementById('chatsContainer');
-    container.innerHTML = `
-      <div class="empty">
-        💬 Chat feature coming soon!<br>
-        To start a chat, go to a product page and click "💬 Chat".
-      </div>
-    `;
-  }
-
   checkUser();
 </script>
 </body>
