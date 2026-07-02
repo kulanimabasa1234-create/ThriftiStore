@@ -12,7 +12,7 @@
       padding-top: 80px;
       padding-bottom: 40px;
     }
-    /* ===== NAVBAR (same as index) ===== */
+    /* Navbar (same as index) – omitted for brevity, but include full navbar styles from index.html */
     .navbar {
       position: fixed;
       top: 0; left: 0; right: 0;
@@ -96,17 +96,7 @@
       transition: 0.2s;
       white-space: nowrap;
     }
-    .nav-actions a:hover, .nav-actions button:hover {
-      background: #f1f5f9;
-    }
-    .nav-actions .sell-btn {
-      background: #e67e22;
-      border: none;
-      color: white;
-    }
-    .nav-actions .sell-btn:hover {
-      background: #d35400;
-    }
+    .nav-actions a:hover, .nav-actions button:hover { background: #f1f5f9; }
     .user-greeting {
       background: #1e6b4c;
       color: white;
@@ -159,12 +149,8 @@
       cursor: pointer;
       text-decoration: none;
     }
-    .dropdown-content a:hover, .dropdown-content button:hover {
-      background: #f1f5f9;
-    }
-    .dropdown.show .dropdown-content {
-      display: block;
-    }
+    .dropdown-content a:hover, .dropdown-content button:hover { background: #f1f5f9; }
+    .dropdown.show .dropdown-content { display: block; }
     .badge-cart, .badge-wishlist {
       background: #e67e22;
       color: white;
@@ -174,7 +160,6 @@
       margin-left: 2px;
     }
 
-    /* ===== Product detail ===== */
     .container {
       max-width: 800px;
       margin: 0 auto;
@@ -189,34 +174,11 @@
       display: inline-block;
       margin-bottom: 16px;
     }
-    .product-image {
-      text-align: center;
-      margin: 16px 0;
-    }
-    .product-image img {
-      max-width: 100%;
-      max-height: 300px;
-      border-radius: 20px;
-    }
-    .price {
-      font-size: 2rem;
-      color: #e67e22;
-      font-weight: 800;
-      margin: 12px 0;
-    }
-    .info {
-      background: #f1f5f9;
-      padding: 16px;
-      border-radius: 20px;
-      margin: 16px 0;
-    }
-    /* ===== Button groups ===== */
-    .btn-group {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-top: 16px;
-    }
+    .product-image { text-align: center; margin: 16px 0; }
+    .product-image img { max-width: 100%; max-height: 300px; border-radius: 20px; }
+    .price { font-size: 2rem; color: #e67e22; font-weight: 800; margin: 12px 0; }
+    .info { background: #f1f5f9; padding: 16px; border-radius: 20px; margin: 16px 0; }
+    .btn-group { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
     .btn-group .btn {
       flex: 1 0 auto;
       min-width: 120px;
@@ -243,19 +205,9 @@
     .btn-edit:hover { background: #2563eb; }
     .btn-delete { background: #ef4444; color: white; }
     .btn-delete:hover { background: #dc2626; }
-
-    .edit-form { display: none; margin-top: 20px; background: #fef9e6; padding: 20px; border-radius: 20px; }
-    .edit-form input, .edit-form textarea, .edit-form select {
-      width: 100%;
-      padding: 8px;
-      margin: 8px 0 16px;
-      border: 1px solid #cbd5e1;
-      border-radius: 40px;
-    }
   </style>
 </head>
 <body>
-<!-- ===== NAVBAR ===== -->
 <nav class="navbar" id="mainNavbar">
   <a href="index.html" class="logo">THRIFTI <small>local · trusted</small></a>
   <div class="nav-categories">
@@ -271,26 +223,50 @@
   <div class="nav-actions" id="navActions"></div>
 </nav>
 
-<!-- ===== MAIN ===== -->
 <div class="container" id="productContainer">
   <a href="index.html" class="back-link">← Back</a>
   <div id="productDetail">Loading...</div>
 </div>
 
 <script>
-  // ----- Navbar update (same as index) -----
+  const API_BASE = 'https://thriftistore-xh2m.onrender.com/api.php';
+
+  async function apiCall(action, method = 'GET', data = null) {
+    const url = `${API_BASE}?action=${action}`;
+    const options = { method };
+    if (data) {
+      options.headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+      options.body = new URLSearchParams(data);
+    }
+    const res = await fetch(url, options);
+    return await res.json();
+  }
+
+  let currentUser = null;
+
+  // ---------- Navbar (same as index) ----------
   function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
   }
+
+  async function checkUser() {
+    const data = await apiCall('get_user');
+    if (data.success) {
+      currentUser = data.user;
+    } else {
+      currentUser = null;
+    }
+    updateNavbar();
+    updateCounts();
+  }
+
   function updateNavbar() {
-    const loggedIn = localStorage.getItem('thrifti_logged_in');
     const actions = document.getElementById('navActions');
-    if (loggedIn) {
-      const user = JSON.parse(loggedIn);
-      const isAdmin = (user.email === 'admin@thrifti.com');
+    if (currentUser) {
+      const isAdmin = currentUser.email === 'admin@thrifti.com';
       actions.innerHTML = `
-        <div class="user-greeting">👋 ${escapeHtml(user.name)} <button id="logoutBtn">Logout</button></div>
+        <div class="user-greeting">👋 ${escapeHtml(currentUser.name)} <button id="logoutBtn">Logout</button></div>
         <a href="cart.html" class="cart-link">🛒 <span class="badge-cart" id="cartCount">0</span></a>
         <a href="wishlist.html" class="wishlist-link">💚 <span class="badge-wishlist" id="wishlistCount">0</span></a>
         <div class="dropdown" id="mainDropdown">
@@ -305,10 +281,11 @@
           </div>
         </div>
       `;
-      updateCounts();
-      document.getElementById('logoutBtn')?.addEventListener('click', () => {
-        localStorage.removeItem('thrifti_logged_in');
-        location.reload();
+      document.getElementById('logoutBtn').addEventListener('click', async () => {
+        await apiCall('logout', 'POST');
+        currentUser = null;
+        updateNavbar();
+        window.location.reload();
       });
       document.querySelector('.dropbtn')?.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -317,6 +294,7 @@
       window.addEventListener('click', () => {
         document.getElementById('mainDropdown')?.classList.remove('show');
       });
+      updateCounts();
     } else {
       actions.innerHTML = `
         <a href="login.html" class="login-link">Log in</a>
@@ -330,7 +308,6 @@
           </div>
         </div>
       `;
-      updateCounts();
       document.querySelector('.dropbtn')?.addEventListener('click', (e) => {
         e.stopPropagation();
         document.getElementById('mainDropdown').classList.toggle('show');
@@ -338,158 +315,181 @@
       window.addEventListener('click', () => {
         document.getElementById('mainDropdown')?.classList.remove('show');
       });
+      updateCounts();
     }
   }
-  function updateCounts() {
-    const cart = JSON.parse(localStorage.getItem('thrifti_cart') || '[]');
-    const total = cart.reduce((s,i) => s + i.quantity, 0);
-    const wish = JSON.parse(localStorage.getItem('thrifti_wishlist') || '[]');
-    const cBadge = document.getElementById('cartCount');
-    const wBadge = document.getElementById('wishlistCount');
-    if (cBadge) cBadge.textContent = total;
-    if (wBadge) wBadge.textContent = wish.length;
-  }
-  updateNavbar();
 
-  // ----- Product logic -----
+  async function updateCounts() {
+    if (!currentUser) {
+      document.getElementById('cartCount').textContent = '0';
+      document.getElementById('wishlistCount').textContent = '0';
+      return;
+    }
+    try {
+      const cartData = await apiCall('cart');
+      if (cartData.success) {
+        const total = cartData.cart.reduce((s, i) => s + i.quantity, 0);
+        document.getElementById('cartCount').textContent = total;
+      }
+      const wishData = await apiCall('wishlist');
+      if (wishData.success) {
+        document.getElementById('wishlistCount').textContent = wishData.wishlist.length;
+      }
+    } catch(e) {}
+  }
+
+  // ---------- Product logic ----------
   const urlParams = new URLSearchParams(window.location.search);
-  const productId = parseInt(urlParams.get('id'));
+  const productId = urlParams.get('id');
 
-  function getProductById(id) {
-    const listings = localStorage.getItem('thrifti_listings');
-    if (!listings) return null;
-    return JSON.parse(listings).find(p => p.id === id);
+  let productData = null;
+
+  async function loadProduct() {
+    if (!productId) { document.getElementById('productDetail').innerHTML = '<p>Invalid product.</p>'; return; }
+    const data = await apiCall('listings');
+    if (data.success) {
+      productData = data.listings.find(p => p.id == productId);
+      if (!productData) {
+        document.getElementById('productDetail').innerHTML = '<p>Product not found.</p>';
+        return;
+      }
+      renderProduct();
+    }
   }
 
-  function saveReportedItem(itemId, itemName, reason, reportedBy) {
-    let reports = JSON.parse(localStorage.getItem('thrifti_reported_items') || '[]');
-    reports.push({ itemId, itemName, reason, reportedBy, date: Date.now() });
-    localStorage.setItem('thrifti_reported_items', JSON.stringify(reports));
-  }
-  function saveReportedUser(userEmail, reason, reportedBy) {
-    let reports = JSON.parse(localStorage.getItem('thrifti_reported_users') || '[]');
-    reports.push({ userEmail, reason, reportedBy, date: Date.now() });
-    localStorage.setItem('thrifti_reported_users', JSON.stringify(reports));
-  }
-
-  const product = getProductById(productId);
-  if (!product) {
-    document.getElementById('productDetail').innerHTML = '<p>Product not found.</p>';
-  } else {
-    const loggedInData = localStorage.getItem('thrifti_logged_in');
-    let currentUser = null;
-    if (loggedInData) currentUser = JSON.parse(loggedInData);
-    const isSeller = (currentUser && currentUser.email === product.sellerEmail);
-
-    let actionButtons = '';
+  function renderProduct() {
+    const p = productData;
+    const isSeller = currentUser && currentUser.email === p.seller_email;
+    let buttons = '';
     if (isSeller) {
-      actionButtons = `
-        <div class="btn-group">
-          <button class="btn btn-edit" id="editBtn">✏️ Edit Listing</button>
-          <button class="btn btn-delete" id="deleteBtn">🗑️ Delete Listing</button>
-        </div>
-      `;
+      buttons = `<div class="btn-group"><button class="btn btn-edit" id="editBtn">✏️ Edit</button><button class="btn btn-delete" id="deleteBtn">🗑️ Delete</button></div>`;
     } else {
-      // Check wishlist status
-      const wishlist = JSON.parse(localStorage.getItem('thrifti_wishlist') || '[]');
-      const inWishlist = wishlist.some(item => item.id === product.id);
-      const wishBtnText = inWishlist ? '❤️ Remove from Wishlist' : '🤍 Add to Wishlist';
-
-      actionButtons = `
+      buttons = `
         <div class="btn-group">
           <button class="btn btn-primary" id="addToCartBtn">🛒 Add to Cart</button>
           <button class="btn btn-warning" id="buyNowBtn">⚡ Buy Now</button>
-          <a href="chat.html?sellerEmail=${encodeURIComponent(product.sellerEmail)}&productName=${encodeURIComponent(product.name)}&productId=${product.id}" class="btn btn-chat" style="display:inline-block; text-align:center;">💬 Chat</a>
-          <button class="btn btn-wishlist" id="wishlistBtn">${wishBtnText}</button>
+          <a href="chat.html?sellerEmail=${encodeURIComponent(p.seller_email)}&productName=${encodeURIComponent(p.name)}&productId=${p.id}" class="btn btn-chat" style="display:inline-block; text-align:center;">💬 Chat</a>
+          <button class="btn btn-wishlist" id="wishlistBtn">🤍 Add to Wishlist</button>
         </div>
-        <div class="btn-group" style="margin-top:8px;">
+        <div class="btn-group">
           <button class="btn btn-report" id="reportItemBtn">⚠️ Report Item</button>
           <button class="btn btn-report" id="reportUserBtn">⚠️ Report Seller</button>
         </div>
       `;
     }
-
     document.getElementById('productDetail').innerHTML = `
-      <div class="product-image">
-        ${product.image ? `<img src="${product.image}" alt="${product.name}">` : `<div style="font-size:5rem;">${product.imageIcon || '📦'}</div>`}
-      </div>
-      <h1>${escapeHtml(product.name)}</h1>
-      <div class="price">R ${product.price.toLocaleString()}</div>
+      <div class="product-image">${p.image ? `<img src="${p.image}">` : `<div style="font-size:5rem;">${p.image_icon || '📦'}</div>`}</div>
+      <h1>${escapeHtml(p.name)}</h1>
+      <div class="price">R ${parseFloat(p.price).toLocaleString()}</div>
       <div class="info">
-        <p><strong>📍 Location:</strong> ${escapeHtml(product.location)}</p>
-        <p><strong>👤 Seller:</strong> ${escapeHtml(product.sellerName || product.sellerEmail)}</p>
-        <p><strong>📝 Description:</strong> ${escapeHtml(product.description || 'No description.')}</p>
+        <p><strong>📍 Location:</strong> ${escapeHtml(p.location)}</p>
+        <p><strong>👤 Seller:</strong> ${escapeHtml(p.seller_name || p.seller_email)}</p>
+        <p><strong>📝 Description:</strong> ${escapeHtml(p.description || '')}</p>
       </div>
-      ${actionButtons}
-      <div id="editFormContainer" class="edit-form"></div>
-      <a href="cart.html" class="back-link" style="display:block; margin-top:20px;">View Cart →</a>
+      ${buttons}
+      <a href="cart.html" class="back-link">View Cart →</a>
     `;
+    attachEvents();
+  }
 
-    if (!isSeller) {
-      document.getElementById('addToCartBtn')?.addEventListener('click', addToCart);
-      document.getElementById('buyNowBtn')?.addEventListener('click', buyNow);
-      document.getElementById('wishlistBtn')?.addEventListener('click', toggleWishlist);
-      document.getElementById('reportItemBtn')?.addEventListener('click', () => {
-        const reason = prompt('Why are you reporting this item?');
-        if (reason && reason.trim()) {
-          saveReportedItem(product.id, product.name, reason, currentUser.email);
-          alert('Report submitted.');
-        }
-      });
-      document.getElementById('reportUserBtn')?.addEventListener('click', () => {
-        const reason = prompt('Why are you reporting this seller?');
-        if (reason && reason.trim()) {
-          saveReportedUser(product.sellerEmail, reason, currentUser.email);
-          alert('Report submitted.');
-        }
-      });
-    } else {
-      document.getElementById('editBtn')?.addEventListener('click', showEditForm);
-      document.getElementById('deleteBtn')?.addEventListener('click', deleteListing);
+  function attachEvents() {
+    const requireLogin = (callback) => {
+      if (!currentUser) {
+        window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
+        return;
+      }
+      callback();
+    };
+
+    document.getElementById('addToCartBtn')?.addEventListener('click', () => requireLogin(addToCart));
+    document.getElementById('buyNowBtn')?.addEventListener('click', () => requireLogin(buyNow));
+    document.getElementById('wishlistBtn')?.addEventListener('click', () => requireLogin(toggleWishlist));
+    document.getElementById('reportItemBtn')?.addEventListener('click', () => requireLogin(reportItem));
+    document.getElementById('reportUserBtn')?.addEventListener('click', () => requireLogin(reportUser));
+    document.getElementById('editBtn')?.addEventListener('click', editListing);
+    document.getElementById('deleteBtn')?.addEventListener('click', deleteListing);
+
+    // Check wishlist status
+    if (currentUser && productData) {
+      checkWishlistStatus();
     }
   }
 
-  function addToCart() {
-    const product = getProductById(productId);
-    let cart = JSON.parse(localStorage.getItem('thrifti_cart') || '[]');
-    const existing = cart.find(i => i.id === product.id);
-    if (existing) existing.quantity++;
-    else cart.push({ id: product.id, name: product.name, price: product.price, image: product.image, imageIcon: product.imageIcon, quantity: 1 });
-    localStorage.setItem('thrifti_cart', JSON.stringify(cart));
-    alert(`${product.name} added to cart.`);
+  async function checkWishlistStatus() {
+    const data = await apiCall('wishlist');
+    if (data.success) {
+      const inWishlist = data.wishlist.some(item => item.id == productData.id);
+      const btn = document.getElementById('wishlistBtn');
+      if (btn) {
+        btn.textContent = inWishlist ? '❤️ Remove from Wishlist' : '🤍 Add to Wishlist';
+      }
+    }
+  }
+
+  async function addToCart() {
+    await apiCall('cart', 'POST', { listing_id: productData.id, quantity: 1 });
+    alert('Added to cart!');
     updateCounts();
   }
-  function buyNow() {
-    addToCart();
+
+  async function buyNow() {
+    await addToCart();
     window.location.href = 'cart.html';
   }
-  function toggleWishlist() {
-    const product = getProductById(productId);
-    let wishlist = JSON.parse(localStorage.getItem('thrifti_wishlist') || '[]');
-    const idx = wishlist.findIndex(i => i.id === product.id);
-    if (idx !== -1) {
-      wishlist.splice(idx, 1);
-      alert('Removed from wishlist.');
-    } else {
-      wishlist.push({ id: product.id, name: product.name, price: product.price, image: product.image, imageIcon: product.imageIcon });
-      alert('Added to wishlist.');
+
+  async function toggleWishlist() {
+    const data = await apiCall('wishlist');
+    if (data.success) {
+      const inWishlist = data.wishlist.some(item => item.id == productData.id);
+      if (inWishlist) {
+        await apiCall('wishlist', 'DELETE', { listing_id: productData.id });
+        alert('Removed from wishlist.');
+      } else {
+        await apiCall('wishlist', 'POST', { listing_id: productData.id });
+        alert('Added to wishlist.');
+      }
+      checkWishlistStatus();
+      updateCounts();
     }
-    localStorage.setItem('thrifti_wishlist', JSON.stringify(wishlist));
-    location.reload(); // refresh to update button text
   }
-  function showEditForm() {
-    // Simple edit form (you can implement full edit if needed)
-    alert('Edit functionality – implement as needed.');
+
+  async function reportItem() {
+    const reason = prompt('Why are you reporting this item?');
+    if (reason && reason.trim()) {
+      await apiCall('report_item', 'POST', { listing_id: productData.id, reason });
+      alert('Report submitted.');
+    }
   }
-  function deleteListing() {
+
+  async function reportUser() {
+    const reason = prompt('Why are you reporting this seller?');
+    if (reason && reason.trim()) {
+      // We need the user ID – we can fetch it or use email; for simplicity, we use email lookup
+      const usersData = await apiCall('admin_users');
+      if (usersData.success) {
+        const seller = usersData.users.find(u => u.email === productData.seller_email);
+        if (seller) {
+          await apiCall('report_user', 'POST', { reported_user_id: seller.id, reason });
+          alert('Report submitted.');
+        } else {
+          alert('Could not find seller.');
+        }
+      }
+    }
+  }
+
+  function editListing() { alert('Edit functionality – implement as needed.'); }
+  async function deleteListing() {
     if (confirm('Delete this listing?')) {
-      let listings = JSON.parse(localStorage.getItem('thrifti_listings') || '[]');
-      listings = listings.filter(l => l.id !== productId);
-      localStorage.setItem('thrifti_listings', JSON.stringify(listings));
-      alert('Listing deleted.');
+      await apiCall('delete_listing', 'POST', { id: productData.id });
+      alert('Deleted.');
       window.location.href = 'index.html';
     }
   }
+
+  // ---------- Init ----------
+  checkUser();
+  loadProduct();
 </script>
 </body>
 </html>
