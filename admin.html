@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin | THRIFTI</title>
   <style>
-    /* Same navbar styles – include them */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', Roboto, sans-serif; background: #f1f5f9; padding-top: 80px; padding-bottom: 40px; }
     .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: white; border-bottom: 1px solid #e2e8f0; padding: 8px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
@@ -36,6 +35,9 @@
     th { background: #f8fafc; }
     button { background: #e67e22; color: white; border: none; padding: 6px 16px; border-radius: 40px; cursor: pointer; }
     .danger-btn { background: #ef4444; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: #f8fafc; border-radius: 16px; padding: 16px; text-align: center; }
+    .stat-number { font-size: 2rem; font-weight: bold; color: #1e6b4c; }
   </style>
 </head>
 <body>
@@ -55,7 +57,15 @@
 </nav>
 
 <div class="container">
-  <h1>🔧 Admin Dashboard</h1>
+  <h1>🔧 THRIFTI Admin Dashboard</h1>
+
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card"><div class="stat-number" id="statUsers">0</div><div>Users</div></div>
+    <div class="stat-card"><div class="stat-number" id="statListings">0</div><div>Listings</div></div>
+    <div class="stat-card"><div class="stat-number" id="statOrders">0</div><div>Orders</div></div>
+    <div class="stat-card"><div class="stat-number" id="statRevenue">R0</div><div>Revenue</div></div>
+    <div class="stat-card"><div class="stat-number" id="statFee">R0</div><div>Platform Fee Income</div></div>
+  </div>
 
   <div class="card">
     <h2>👥 Users</h2>
@@ -65,6 +75,11 @@
   <div class="card">
     <h2>📦 Listings</h2>
     <div id="listingsTable">Loading...</div>
+  </div>
+
+  <div class="card">
+    <h2>📋 Orders</h2>
+    <div id="ordersTable">Loading...</div>
   </div>
 
   <div class="card">
@@ -104,7 +119,7 @@
         return;
       }
     } else {
-      window.location.href = 'login.html';
+      window.location.href = 'login.html?admin=1';
       return;
     }
     updateNavbar();
@@ -154,6 +169,7 @@
         <div class="dropdown" id="mainDropdown">
           <button class="dropbtn">⋮</button>
           <div class="dropdown-content">
+            <a href="login.html?admin=1">🔐 Admin Login</a>
             <a href="manual.html">📖 User Manual</a>
             <a href="contact.html">📧 Contact</a>
           </div>
@@ -190,18 +206,31 @@
   }
 
   async function loadAdminData() {
+    // Stats
+    const stats = await apiCall('admin_stats');
+    if (stats.success) {
+      document.getElementById('statUsers').textContent = stats.stats.users;
+      document.getElementById('statListings').textContent = stats.stats.listings;
+      document.getElementById('statOrders').textContent = stats.stats.orders;
+      document.getElementById('statRevenue').textContent = 'R' + parseFloat(stats.stats.revenue).toFixed(2);
+      document.getElementById('statFee').textContent = 'R' + parseFloat(stats.stats.fee_income).toFixed(2);
+    }
+
+    // Users
     const users = await apiCall('admin_users');
-    if (users.success) {
-      renderUsers(users.users);
-    }
+    if (users.success) { renderUsers(users.users); }
+
+    // Listings
     const listings = await apiCall('admin_listings');
-    if (listings.success) {
-      renderListings(listings.listings);
-    }
+    if (listings.success) { renderListings(listings.listings); }
+
+    // Orders
+    const orders = await apiCall('admin_orders');
+    if (orders.success) { renderOrders(orders.orders); }
+
+    // Reports
     const reports = await apiCall('admin_reports');
-    if (reports.success) {
-      renderReports(reports);
-    }
+    if (reports.success) { renderReports(reports); }
   }
 
   function renderUsers(users) {
@@ -221,6 +250,25 @@
     let html = '<table><thead><tr><th>ID</th><th>Name</th><th>Seller</th><th>Price</th><th>Location</th></tr></thead><tbody>';
     listings.forEach(l => {
       html += `<tr><td>${l.id}</td><td>${escapeHtml(l.name)}</td><td>${escapeHtml(l.seller_name || l.seller_email)}</td><td>R ${parseFloat(l.price).toLocaleString()}</td><td>${escapeHtml(l.location)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  }
+
+  function renderOrders(orders) {
+    const container = document.getElementById('ordersTable');
+    if (!orders.length) { container.innerHTML = '<p>No orders.</p>'; return; }
+    let html = '<table><thead><tr><th>ID</th><th>Buyer</th><th>Total</th><th>Fee</th><th>Seller Gets</th><th>Status</th><th>Date</th></tr></thead><tbody>';
+    orders.forEach(o => {
+      html += `<tr>
+        <td>${o.id}</td>
+        <td>${escapeHtml(o.buyer_name)}<br><small>${escapeHtml(o.buyer_email)}</small></td>
+        <td>R ${parseFloat(o.total).toFixed(2)}</td>
+        <td>R ${parseFloat(o.fee || 0).toFixed(2)}</td>
+        <td>R ${parseFloat(o.seller_gets || 0).toFixed(2)}</td>
+        <td>${o.status || 'pending'}</td>
+        <td>${new Date(o.created_at).toLocaleString()}</td>
+      </tr>`;
     });
     html += '</tbody></table>';
     container.innerHTML = html;
