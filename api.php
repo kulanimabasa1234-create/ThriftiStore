@@ -112,38 +112,47 @@ switch ($action) {
         break;
 
     // ---------- CART ----------
-    case 'cart':
-        if (!isset($_SESSION['user_id'])) {
-            echo json_encode(['success' => false, 'error' => 'Not logged in']);
-            break;
-        }
-        $user_id = $_SESSION['user_id'];
-        if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-            $stmt = $pdo->prepare("SELECT c.*, l.name, l.price, l.image, l.image_icon FROM carts c JOIN listings l ON c.listing_id = l.id WHERE c.user_id = ?");
-            $stmt->execute([$user_id]);
-            $cart = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            echo json_encode(['success' => true, 'cart' => $cart]);
-        } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $listing_id = $_POST['listing_id'];
-            $quantity = $_POST['quantity'] ?? 1;
-            $stmt = $pdo->prepare("SELECT * FROM carts WHERE user_id = ? AND listing_id = ?");
-            $stmt->execute([$user_id, $listing_id]);
-            if ($stmt->rowCount() > 0) {
-                $stmt = $pdo->prepare("UPDATE carts SET quantity = quantity + ? WHERE user_id = ? AND listing_id = ?");
-                $stmt->execute([$quantity, $user_id, $listing_id]);
-            } else {
-                $stmt = $pdo->prepare("INSERT INTO carts (user_id, listing_id, quantity) VALUES (?, ?, ?)");
-                $stmt->execute([$user_id, $listing_id, $quantity]);
-            }
-            echo json_encode(['success' => true]);
-        } elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
-            parse_str(file_get_contents("php://input"), $delete_vars);
-            $listing_id = $delete_vars['listing_id'] ?? 0;
+   case 'cart':
+    if (!isset($_SESSION['user_id'])) {
+        echo json_encode(['success' => false, 'error' => 'Not logged in']);
+        break;
+    }
+    $user_id = $_SESSION['user_id'];
+    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+        $stmt = $pdo->prepare("SELECT c.*, l.name, l.price, l.image, l.image_icon FROM carts c JOIN listings l ON c.listing_id = l.id WHERE c.user_id = ?");
+        $stmt->execute([$user_id]);
+        $cart = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['success' => true, 'cart' => $cart]);
+    } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $listing_id = $_POST['listing_id'];
+        $quantity = (int)($_POST['quantity'] ?? 1);
+        if ($quantity <= 0) {
+            // Remove item if quantity is 0 or less
             $stmt = $pdo->prepare("DELETE FROM carts WHERE user_id = ? AND listing_id = ?");
             $stmt->execute([$user_id, $listing_id]);
             echo json_encode(['success' => true]);
+            break;
         }
-        break;
+        // Check if already in cart
+        $stmt = $pdo->prepare("SELECT * FROM carts WHERE user_id = ? AND listing_id = ?");
+        $stmt->execute([$user_id, $listing_id]);
+        if ($stmt->rowCount() > 0) {
+            // Update to exact quantity
+            $stmt = $pdo->prepare("UPDATE carts SET quantity = ? WHERE user_id = ? AND listing_id = ?");
+            $stmt->execute([$quantity, $user_id, $listing_id]);
+        } else {
+            $stmt = $pdo->prepare("INSERT INTO carts (user_id, listing_id, quantity) VALUES (?, ?, ?)");
+            $stmt->execute([$user_id, $listing_id, $quantity]);
+        }
+        echo json_encode(['success' => true]);
+    } elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+        parse_str(file_get_contents("php://input"), $delete_vars);
+        $listing_id = $delete_vars['listing_id'] ?? 0;
+        $stmt = $pdo->prepare("DELETE FROM carts WHERE user_id = ? AND listing_id = ?");
+        $stmt->execute([$user_id, $listing_id]);
+        echo json_encode(['success' => true]);
+    }
+    break;
 
     // ---------- WISHLIST ----------
     case 'wishlist':
@@ -173,38 +182,41 @@ switch ($action) {
 
     // ---------- CHECKOUT ----------
     case 'checkout':
-        if (!isset($_SESSION['user_id'])) {
-            echo json_encode(['success' => false, 'error' => 'Not logged in']);
-            break;
-        }
-        $user_id = $_SESSION['user_id'];
-        $stmt = $pdo->prepare("SELECT c.listing_id, c.quantity, l.price FROM carts c JOIN listings l ON c.listing_id = l.id WHERE c.user_id = ?");
-        $stmt->execute([$user_id]);
-        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        if (empty($items)) {
-            echo json_encode(['success' => false, 'error' => 'Cart empty']);
-            break;
-        }
-        $total = 0;
-        foreach ($items as $item) $total += $item['price'] * $item['quantity'];
-        $pdo->beginTransaction();
-        try {
-            $stmt = $pdo->prepare("INSERT INTO orders (user_id, total) VALUES (?, ?)");
-            $stmt->execute([$user_id, $total]);
-            $order_id = $pdo->lastInsertId();
-            foreach ($items as $item) {
-                $stmt = $pdo->prepare("INSERT INTO order_items (order_id, listing_id, quantity, price) VALUES (?, ?, ?, ?)");
-                $stmt->execute([$order_id, $item['listing_id'], $item['quantity'], $item['price']]);
-            }
-            $stmt = $pdo->prepare("DELETE FROM carts WHERE user_id = ?");
-            $stmt->execute([$user_id]);
-            $pdo->commit();
-            echo json_encode(['success' => true, 'order_id' => $order_id, 'total' => $total]);
-        } catch (Exception $e) {
-            $pdo->rollBack();
-            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-        }
+    if (!isset($_SESSION['user_id'])) {
+        echo json_encode(['success' => false, 'error' => 'Not logged in']);
         break;
+    }
+    $user_id = $_SESSION['user_id'];
+    $stmt = $pdo->prepare("SELECT c.listing_id, c.quantity, l.price, l.seller_email FROM carts c JOIN listings l ON c.listing_id = l.id WHERE c.user_id = ?");
+    $stmt->execute([$user_id]);
+    $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if (empty($items)) {
+        echo json_encode(['success' => false, 'error' => 'Cart empty']);
+        break;
+    }
+    $total = 0;
+    foreach ($items as $item) $total += $item['price'] * $item['quantity'];
+    $fee = round($total * 0.15, 2);
+    $seller_gets = round($total - $fee, 2);
+
+    $pdo->beginTransaction();
+    try {
+        $stmt = $pdo->prepare("INSERT INTO orders (user_id, total, fee, seller_gets) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$user_id, $total, $fee, $seller_gets]);
+        $order_id = $pdo->lastInsertId();
+        foreach ($items as $item) {
+            $stmt = $pdo->prepare("INSERT INTO order_items (order_id, listing_id, quantity, price) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$order_id, $item['listing_id'], $item['quantity'], $item['price']]);
+        }
+        $stmt = $pdo->prepare("DELETE FROM carts WHERE user_id = ?");
+        $stmt->execute([$user_id]);
+        $pdo->commit();
+        echo json_encode(['success' => true, 'order_id' => $order_id, 'total' => $total, 'fee' => $fee, 'seller_gets' => $seller_gets]);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    break;
 
     // ---------- REPORTS ----------
     case 'report_item':
