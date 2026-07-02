@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cart | THRIFTI</title>
   <style>
-    /* same as before */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', Roboto, sans-serif; background: #f8fafc; padding-top: 80px; padding-bottom: 40px; }
     .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: white; border-bottom: 1px solid #e2e8f0; padding: 8px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
@@ -37,14 +36,14 @@
     .cart-item-name { font-weight: bold; }
     .cart-item-price { color: #e67e22; font-weight: bold; }
     .quantity-control { display: flex; gap: 10px; margin-top: 8px; align-items: center; }
-    .quantity-control button { background: #f1f5f9; border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; }
+    .quantity-control button { background: #f1f5f9; border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-weight: bold; }
     .remove-btn { background: #fee2e2; color: #b91c1c; border: none; padding: 4px 12px; border-radius: 20px; cursor: pointer; }
     .cart-summary { margin-top: 24px; padding-top: 16px; border-top: 2px solid #e2e8f0; text-align: right; }
     .total { font-size: 1.5rem; font-weight: bold; }
     .checkout-btn { background: #1e6b4c; color: white; border: none; padding: 12px 32px; border-radius: 40px; font-weight: bold; cursor: pointer; margin-top: 16px; }
     .empty-cart { text-align: center; padding: 40px; color: #6c757d; }
 
-    .modal { /* same as before */ display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 2000; }
+    .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 2000; }
     .modal-content { background: white; max-width: 480px; width:90%; border-radius: 32px; padding: 24px; max-height: 90vh; overflow-y: auto; }
     .modal-content h3 { margin-bottom: 16px; }
     .close-modal { float: right; cursor: pointer; font-size: 1.5rem; }
@@ -108,7 +107,7 @@
     <div id="paymentSuccess" style="display:none;" class="payment-success">
       <div class="icon">✅</div>
       <h3>Payment Successful!</h3>
-      <p>Your order has been placed. Thank you for supporting local sellers.</p>
+      <p id="successMessage">Your order has been placed. Thank you for supporting local sellers.</p>
       <p><a href="index.html" class="back-link" style="margin-top:12px;">Continue shopping</a></p>
     </div>
     <p style="font-size:0.7rem; margin-top:12px; text-align:center; color:#6c757d;">🔐 This is a simulation – in production, payment would be processed securely.</p>
@@ -254,7 +253,7 @@
             <div class="cart-item-name">${escapeHtml(item.name)}</div>
             <div class="cart-item-price">R ${parseFloat(item.price).toLocaleString()}</div>
             <div class="quantity-control">
-              <button class="qty-minus" data-id="${item.listing_id}">-</button>
+              <button class="qty-minus" data-id="${item.listing_id}">−</button>
               <span>${item.quantity}</span>
               <button class="qty-plus" data-id="${item.listing_id}">+</button>
               <button class="remove-btn" data-id="${item.listing_id}">Remove</button>
@@ -283,6 +282,7 @@
     document.getElementById('checkoutBtn').addEventListener('click', showPaymentModal);
   }
 
+  // ----- Update quantity (direct set) -----
   async function updateQuantity(listingId, delta) {
     const data = await apiCall('cart');
     if (!data.success) return;
@@ -292,24 +292,15 @@
     const newQty = item.quantity + delta;
     if (newQty <= 0) {
       await removeItem(listingId);
+      return;
+    }
+    // Send the new quantity directly (API will set it)
+    const result = await apiCall('cart', 'POST', { listing_id: listingId, quantity: newQty });
+    if (result.success) {
+      renderCart();
+      updateCounts();
     } else {
-      // Check if stock allows this quantity
-      const listingData = await apiCall('listings');
-      if (listingData.success) {
-        const listing = listingData.listings.find(l => l.id == listingId);
-        if (listing && listing.stock < newQty) {
-          alert('Insufficient stock. Only ' + listing.stock + ' available.');
-          return;
-        }
-      }
-      // Update cart with new quantity
-      const result = await apiCall('cart', 'POST', { listing_id: listingId, quantity: newQty });
-      if (result.success) {
-        renderCart();
-        updateCounts();
-      } else {
-        alert(result.error || 'Failed to update quantity.');
-      }
+      alert(result.error || 'Failed to update quantity.');
     }
   }
 
@@ -319,26 +310,20 @@
     updateCounts();
   }
 
-  // ---------- Payment Modal ----------
-  let currentTotal = 0;
-  let currentFee = 0;
-  let currentSellerGets = 0;
-  let orderId = null;
-
+  // ---------- Payment ----------
   async function showPaymentModal() {
     const data = await apiCall('cart');
     if (!data.success || data.cart.length === 0) { alert('Cart empty.'); return; }
     let total = 0;
     data.cart.forEach(i => total += i.price * i.quantity);
-    currentTotal = total;
-    currentFee = total * 0.15;
-    currentSellerGets = total - currentFee;
+    const fee = total * 0.15;
+    const sellerGets = total - fee;
 
     document.getElementById('paymentBreakdownContainer').innerHTML = `
       <div class="payment-breakdown">
         <p><span>Total</span> <span>R ${total.toFixed(2)}</span></p>
-        <p><span>Platform fee (15%)</span> <span>R ${currentFee.toFixed(2)}</span></p>
-        <p><span>Seller gets</span> <span>R ${currentSellerGets.toFixed(2)}</span></p>
+        <p><span>Platform fee (15%)</span> <span>R ${fee.toFixed(2)}</span></p>
+        <p><span>Seller gets</span> <span>R ${sellerGets.toFixed(2)}</span></p>
         <p class="total-row"><span>You pay</span> <span>R ${total.toFixed(2)}</span></p>
       </div>
     `;
@@ -372,15 +357,14 @@
     try {
       const result = await apiCall('checkout', 'POST');
       if (result.success) {
-        orderId = result.order_id;
         document.getElementById('cardForm').style.display = 'none';
         document.getElementById('paymentSuccess').style.display = 'block';
-        document.querySelector('#paymentSuccess p').innerHTML =
-          `Order #${orderId} – R ${result.total.toFixed(2)} paid.<br>Seller gets R ${result.seller_gets.toFixed(2)}, platform fee R ${result.fee.toFixed(2)}.`;
+        document.getElementById('successMessage').innerHTML =
+          `Order #${result.order_id} – R ${result.total.toFixed(2)} paid.<br>Seller gets R ${result.seller_gets.toFixed(2)}, platform fee R ${result.fee.toFixed(2)}.`;
         renderCart();
         updateCounts();
       } else {
-        alert('Payment failed: ' + result.error);
+        alert('Payment failed: ' + (result.error || 'Unknown error'));
         this.disabled = false;
         this.textContent = 'Pay Now';
       }
